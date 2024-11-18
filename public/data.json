@@ -1,0 +1,14 @@
+[
+    { "datestamp": "2024-01", "business_unit" : "Cyber", "team" : "Alpha" , "location" : "Sydney", "value": 0.90 },
+    { "datestamp": "2024-02", "business_unit" : "Cyber", "team" : "Alpha" , "location" : "Sydney", "value": 0.94 },
+    { "datestamp": "2024-03", "business_unit" : "Cyber", "team" : "Alpha" , "location" : "Sydney",  "value": 0.92 },
+    { "datestamp": "2024-04", "business_unit" : "Cyber", "team" : "Alpha" , "location" : "Sydney",  "value": 0.91 },
+    { "datestamp": "2024-01", "business_unit" : "Sales", "team" : "Alpha" , "location" : "Sydney",  "value": 0.80 },
+    { "datestamp": "2024-02", "business_unit" : "Sales", "team" : "Alpha" , "location" : "Sydney",  "value": 0.76 },
+    { "datestamp": "2024-03", "business_unit" : "Sales", "team" : "Alpha" , "location" : "Sydney",  "value": 0.62 },
+    { "datestamp": "2024-04", "business_unit" : "Sales", "team" : "Alpha" , "location" : "Sydney",  "value": 0.51 },
+    { "datestamp": "2024-01", "business_unit" : "Marketing", "team" : "Alpha" , "location" : "Sydney",  "value": 0.60 },
+    { "datestamp": "2024-02", "business_unit" : "Marketing", "team" : "Alpha" , "location" : "Sydney",  "value": 0.56 },
+    { "datestamp": "2024-03", "business_unit" : "Marketing", "team" : "Alpha" , "location" : "Sydney",  "value": 0.42 },
+    { "datestamp": "2024-04", "business_unit" : "Marketing", "team" : "Alpha" , "location" : "Sydney",  "value": 0.31 }
+]
