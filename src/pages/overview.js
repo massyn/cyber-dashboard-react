@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import FilterDropdown from '../components/FilterDropdown';
-import { fetchAndExtractCSV } from '../utils/fetchData';
+//import { fetchAndExtractCSV } from '../utils/fetchData';
+import { fetchAndExtractJSON } from '../utils/fetchData';
 import { handleFilterChange } from '../utils/handleFilterChange';
 import { aggregateData } from '../utils/aggregateData';
 
@@ -17,13 +18,13 @@ const Overview = () => {
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const data = await fetchAndExtractCSV('/data_business.csv', [
+        //const data = await fetchAndExtractCSV('/data.csv', [
+        const data = await fetchAndExtractJSON('/data.json', [
           'business_unit',
           'team',
           'location',
         ]);
         setChartData(data);
-        
 
         const aggregatedData = aggregateData(data.rawData);
         setFilteredData(aggregatedData);
@@ -53,7 +54,7 @@ const Overview = () => {
   return (
     
     <div>
-            <h1>Hello world</h1>
+            <h1>Overview page</h1>
       <FilterDropdown
         label="Business Unit"
         options={chartData.business_unit}
