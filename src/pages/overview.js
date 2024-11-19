@@ -21,7 +21,7 @@ const Overview = () => {
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const data = await fetchAndExtractJSON('/data.json');
+        const data = await fetchAndExtractJSON('/overview.json');
         setChartData(data.rawData);
 
         // Extract unique values for fields after the data is fetched
