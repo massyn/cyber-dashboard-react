@@ -2,13 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
 import FilterDropdown from '../components/FilterDropdown';
 import { fetchAndExtractJSON } from '../utils/fetchData';
-import { handleFilterChange } from '../utils/handleFilterChange';
 import { aggregateData } from '../utils/aggregateData';
 
 const Overview = () => {
   const [chartData, setChartData] = useState(null);
   const [filters, setFilters] = useState({
-    businessUnit: '',
+    business_unit: '',
     team: '',
     location: '',
   });
@@ -34,15 +33,24 @@ const Overview = () => {
     initializeData();
   }, []);
 
-  const handleDropdownChange = (event) =>
-    handleFilterChange({
-      event,
-      filters,
-      setFilters,
-      data: chartData.rawData,
-      setFilteredData,
-    });
+  // Handle dropdown changes directly
+  const handleDropdownChange = (event) => {
+    const { name, value } = event.target;
+    const updatedFilters = { ...filters, [name]: value };
+    setFilters(updatedFilters);
 
+    // Aggregate data with updated filters
+    if (chartData) {
+      const aggregatedData = aggregateData(chartData.rawData, {
+        business_unit: updatedFilters.business_unit,
+        team: updatedFilters.team,
+        location: updatedFilters.location,
+      });
+      setFilteredData(aggregatedData);
+    }
+  };
+
+  // Render loading state if data is not ready
   if (!filteredData || !chartData) {
     return <h1>Loading....</h1>;
   }
@@ -67,9 +75,9 @@ const Overview = () => {
             <FilterDropdown
               label="Business Unit"
               options={chartData.business_unit}
-              value={filters.businessUnit}
+              value={filters.business_unit}
               onChange={handleDropdownChange}
-              name="businessUnit"
+              name="business_unit"
             />
             <FilterDropdown
               label="Team"
@@ -101,8 +109,43 @@ const Overview = () => {
           >
             <h5 className="card-title">Organisational score over time</h5>
             <LineChart
-              xAxis={[{ id: 'barCategories', data: filteredData.labels, scaleType: 'band' }]}
-              series={[{ data: filteredData.values }]}
+              xAxis={[
+                {
+                  id: 'lineCategories',
+                  data: filteredData.labels,
+                  scaleType: 'band',
+                },
+              ]}
+              yAxis={[
+                {
+                  id: 'percentageAxis',
+                  min: 0,
+                  max: 100,
+                  valueFormatter: (value) => `${value}%`,
+                },
+              ]}
+              series={[
+                {
+                  id: 'value',
+                  data: filteredData.values.map((value) => (value * 100).toFixed(2)),
+                  label: 'Value',
+                  color: 'blue',
+                },
+                {
+                  id: 'slo',
+                  data: filteredData.sloAverages.map((value) => (value * 100).toFixed(2)),
+                  label: 'SLO Target',
+                  color: 'green',
+                  showMark: false
+                },
+                {
+                  id: 'slo_min',
+                  data: filteredData.sloMinAverages.map((value) => (value * 100).toFixed(2)),
+                  label: 'SLO Minimum',
+                  color: 'yellow',
+                  showMark: false
+                },
+              ]}
               width={800}
               height={400}
             />
