@@ -3,66 +3,59 @@ import { LineChart } from '@mui/x-charts/LineChart';
 import FilterDropdown from '../components/FilterDropdown';
 import { fetchAndExtractJSON } from '../utils/fetchData';
 import { aggregateData } from '../utils/aggregateData';
+import '../style.css'; // Import the CSS file
 
 const Overview = () => {
-  const [chartData, setChartData] = useState(null);
-  const [filters, setFilters] = useState({
-    business_unit: '',
-    team: '',
-    location: '',
-  });
-  const [filteredData, setFilteredData] = useState(null);
-  const [fieldOptions, setFieldOptions] = useState({
-    business_unit: [],
-    team: [],
-    location: [],
-  });
+  const [rawData, setRawData] = useState(null);
+  const [selected_business_unit, setSelected_business_unit] = useState('');
+  const [selected_team, setSelected_team] = useState('');
+  const [selected_location, setSelected_location] = useState('');
+  const [chart1_filteredData, setChart1_filteredData] = useState(null);
 
   useEffect(() => {
     const initializeData = async () => {
       try {
         const data = await fetchAndExtractJSON('/overview.json');
-        setChartData(data.rawData);
-
-        // Extract unique values for fields after the data is fetched
-        const extractedFields = {
-          business_unit: [...new Set(data.rawData.map((item) => item.business_unit))],
-          team: [...new Set(data.rawData.map((item) => item.team))],
-          location: [...new Set(data.rawData.map((item) => item.location))],
-        };
-
-        setFieldOptions(extractedFields);
-
-        const aggregatedData = aggregateData(data.rawData);
-        setFilteredData(aggregatedData);
+        setRawData(data.rawData);
+        const chart1_aggregatedData = aggregateData(data.rawData);
+        setChart1_filteredData(chart1_aggregatedData);
       } catch (error) {
         console.error('Error initializing data:', error);
       }
     };
-
     initializeData();
   }, []);
 
-  // Handle dropdown changes directly
   const handleDropdownChange = (event) => {
     const { name, value } = event.target;
-    const updatedFilters = { ...filters, [name]: value };
-    setFilters(updatedFilters);
+    if (name === 'business_unit') setSelected_business_unit(value);
+    if (name === 'team') setSelected_team(value);
+    if (name === 'location') setSelected_location(value);
 
-    // Aggregate data with updated filters
-    if (chartData) {
-      const aggregatedData = aggregateData(chartData, {
-        business_unit: updatedFilters.business_unit,
-        team: updatedFilters.team,
-        location: updatedFilters.location,
-      });
-      setFilteredData(aggregatedData);
+    const updatedFilters = {
+      business_unit: name === 'business_unit' ? value : selected_business_unit,
+      team: name === 'team' ? value : selected_team,
+      location: name === 'location' ? value : selected_location,
+    };
+
+    if (rawData) {
+      const chart1_aggregatedData = aggregateData(rawData, updatedFilters);
+      setChart1_filteredData(chart1_aggregatedData);
     }
   };
 
-  // Render loading state if data is not ready
-  if (!filteredData || !chartData) {
-    return <h1>Loading....</h1>;
+  if (!chart1_filteredData || !rawData) {
+    return (
+      <div className="spinner-container">
+        <div className="text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <h3 className="mt-3 text-dark">Please wait while the data is loading...</h3>
+          <p className="text-muted">This may take a moment depending on the size of your data.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -72,34 +65,26 @@ const Overview = () => {
       <div className="row">
         {/* Filters Section */}
         <div className="col-md-3">
-          <div
-            className="card p-3 mb-4"
-            style={{
-              backgroundColor: '#f8f9fa', // Light gray background
-              border: '1px solid #ddd', // Subtle border for definition
-              borderRadius: '8px', // Rounded corners for a modern look
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Light shadow for separation
-            }}
-          >
+          <div className="card card-filters">
             <h5 className="card-title">Filters</h5>
             <FilterDropdown
               label="Business Unit"
-              options={fieldOptions.business_unit}
-              value={filters.business_unit}
+              chartData={rawData}
+              value={selected_business_unit}
               onChange={handleDropdownChange}
               name="business_unit"
             />
             <FilterDropdown
               label="Team"
-              options={fieldOptions.team}
-              value={filters.team}
+              chartData={rawData}
+              value={selected_team}
               onChange={handleDropdownChange}
               name="team"
             />
             <FilterDropdown
               label="Location"
-              options={fieldOptions.location}
-              value={filters.location}
+              chartData={rawData}
+              value={selected_location}
               onChange={handleDropdownChange}
               name="location"
             />
@@ -108,52 +93,40 @@ const Overview = () => {
 
         {/* Chart Section */}
         <div className="col-md-9">
-          <div
-            className="card p-3 mb-4"
-            style={{
-              backgroundColor: '#ffffff', // White background for the chart
-              border: '1px solid #ddd', // Subtle border for definition
-              borderRadius: '8px', // Rounded corners for a modern look
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)', // Light shadow for separation
-            }}
-          >
+          <div className="card card-chart">
             <h5 className="card-title">Organisational score over time</h5>
             <LineChart
-              xAxis={[
-                {
-                  id: 'lineCategories',
-                  data: filteredData.labels,
-                  scaleType: 'band',
-                },
-              ]}
-              yAxis={[
-                {
-                  id: 'percentageAxis',
-                  min: 0,
-                  max: 100,
-                  labelFormatter: (value) => `${value}%`, // Format y-axis labels as percentages
-                },
-              ]}
+              xAxis={[{
+                id: 'lineCategories',
+                data: chart1_filteredData.labels,
+                scaleType: 'band',
+              }]}
+              yAxis={[{
+                id: 'percentageAxis',
+                min: 0,
+                max: 100,
+                labelFormatter: (value) => `${value}%`,
+              }]}
               series={[
                 {
                   id: 'value',
-                  data: filteredData.values.map((value) => (value * 100).toFixed(2)),
+                  data: chart1_filteredData.values.map((value) => (value * 100).toFixed(2)),
                   label: 'Value',
                   color: 'blue',
                 },
                 {
                   id: 'slo',
-                  data: filteredData.sloAverages.map((value) => (value * 100).toFixed(2)),
+                  data: chart1_filteredData.sloAverages.map((value) => (value * 100).toFixed(2)),
                   label: 'SLO',
                   color: 'green',
-                  showMark: false
+                  showMark: false,
                 },
                 {
                   id: 'slo_min',
-                  data: filteredData.sloMinAverages.map((value) => (value * 100).toFixed(2)),
+                  data: chart1_filteredData.sloMinAverages.map((value) => (value * 100).toFixed(2)),
                   label: 'SLO Min',
                   color: 'yellow',
-                  showMark: false
+                  showMark: false,
                 },
               ]}
               width={800}

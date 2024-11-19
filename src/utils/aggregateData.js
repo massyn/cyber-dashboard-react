@@ -1,3 +1,5 @@
+// aggregateData.js
+
 export const aggregateData = (data, filters = {}) => {
   // Apply filters
   const filteredData = data.filter((item) => {
@@ -31,4 +33,39 @@ export const aggregateData = (data, filters = {}) => {
   );
 
   return { labels, values, sloAverages, sloMinAverages };
+};
+
+export const aggregateDataByBusinessUnit = (data) => {
+  const businessUnitData = {};
+
+  // Iterate through the raw data and aggregate by business_unit
+  data.forEach(item => {
+    const { business_unit, value, sloAverage, sloMinAverage } = item;
+
+    if (!businessUnitData[business_unit]) {
+      businessUnitData[business_unit] = {
+        businessUnit: business_unit,
+        values: [],
+        sloAverages: [],
+        sloMinAverages: [],
+      };
+    }
+
+    businessUnitData[business_unit].values.push(value);
+    businessUnitData[business_unit].sloAverages.push(sloAverage);
+    businessUnitData[business_unit].sloMinAverages.push(sloMinAverage);
+  });
+
+  // Prepare the data for plotting
+  const aggregatedData = {
+    labels: [...new Set(data.map(item => item.datestamp))],
+    series: Object.values(businessUnitData).map(unit => ({
+      businessUnit: unit.businessUnit,
+      values: unit.values, // This can be aggregated (e.g., average, sum, etc.)
+      sloAverages: unit.sloAverages,
+      sloMinAverages: unit.sloMinAverages,
+    })),
+  };
+
+  return aggregatedData;
 };
