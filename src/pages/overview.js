@@ -12,16 +12,26 @@ const Overview = () => {
     location: '',
   });
   const [filteredData, setFilteredData] = useState(null);
+  const [fieldOptions, setFieldOptions] = useState({
+    business_unit: [],
+    team: [],
+    location: [],
+  });
 
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const data = await fetchAndExtractJSON('/data.json', [
-          'business_unit',
-          'team',
-          'location',
-        ]);
-        setChartData(data);
+        const data = await fetchAndExtractJSON('/data.json');
+        setChartData(data.rawData);
+
+        // Extract unique values for fields after the data is fetched
+        const extractedFields = {
+          business_unit: [...new Set(data.rawData.map((item) => item.business_unit))],
+          team: [...new Set(data.rawData.map((item) => item.team))],
+          location: [...new Set(data.rawData.map((item) => item.location))],
+        };
+
+        setFieldOptions(extractedFields);
 
         const aggregatedData = aggregateData(data.rawData);
         setFilteredData(aggregatedData);
@@ -41,7 +51,7 @@ const Overview = () => {
 
     // Aggregate data with updated filters
     if (chartData) {
-      const aggregatedData = aggregateData(chartData.rawData, {
+      const aggregatedData = aggregateData(chartData, {
         business_unit: updatedFilters.business_unit,
         team: updatedFilters.team,
         location: updatedFilters.location,
@@ -58,7 +68,7 @@ const Overview = () => {
   return (
     <div className="container">
       <h1 className="my-4">Overview Page</h1>
-      <pre>The overview page provides an executive overview of how the organisation is performing.</pre>
+      <p>The overview page provides an executive overview of how the organisation is performing.</p>
       <div className="row">
         {/* Filters Section */}
         <div className="col-md-3">
@@ -74,21 +84,21 @@ const Overview = () => {
             <h5 className="card-title">Filters</h5>
             <FilterDropdown
               label="Business Unit"
-              options={chartData.business_unit}
+              options={fieldOptions.business_unit}
               value={filters.business_unit}
               onChange={handleDropdownChange}
               name="business_unit"
             />
             <FilterDropdown
               label="Team"
-              options={chartData.team}
+              options={fieldOptions.team}
               value={filters.team}
               onChange={handleDropdownChange}
               name="team"
             />
             <FilterDropdown
               label="Location"
-              options={chartData.location}
+              options={fieldOptions.location}
               value={filters.location}
               onChange={handleDropdownChange}
               name="location"
@@ -121,7 +131,7 @@ const Overview = () => {
                   id: 'percentageAxis',
                   min: 0,
                   max: 100,
-                  valueFormatter: (value) => `${value}%`,
+                  labelFormatter: (value) => `${value}%`, // Format y-axis labels as percentages
                 },
               ]}
               series={[
@@ -134,14 +144,14 @@ const Overview = () => {
                 {
                   id: 'slo',
                   data: filteredData.sloAverages.map((value) => (value * 100).toFixed(2)),
-                  label: 'SLO Target',
+                  label: 'SLO',
                   color: 'green',
                   showMark: false
                 },
                 {
                   id: 'slo_min',
                   data: filteredData.sloMinAverages.map((value) => (value * 100).toFixed(2)),
-                  label: 'SLO Minimum',
+                  label: 'SLO Min',
                   color: 'yellow',
                   showMark: false
                 },
