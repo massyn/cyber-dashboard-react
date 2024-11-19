@@ -5,6 +5,10 @@ You can see the resulting dashboard on [https://cyber-dashboard.pages.dev/](http
 
 ## Available Scripts
 
+If this is your first time running this script you need to run
+
+### `npm ci`
+
 In the project directory, you can run:
 
 ### `npm start`
