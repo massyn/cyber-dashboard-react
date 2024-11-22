@@ -1,0 +1,82 @@
+datestamp,metric_id,category,title,slo,slo_min,weight,business_unit,team,location,totalok,total
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Alpha,Sydney,9,10
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Bravo,Sydney,16,20
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Charlie,Brisbane,12,30
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Alpha,Brisbane,15,15
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Bravo,Melbourne,16,19
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Alpha,Sydney,8,10
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Bravo,Sydney,15,20
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Charlie,Brisbane,10,30
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Alpha,Brisbane,10,15
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Bravo,Melbourne,10,19
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Charlie,Melbourne,20,34
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Alpha,Melbourne,20,45
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Bravo,Sydney,30,56
+2024-01-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Charlie,Brisbane,20,43
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Charlie,Melbourne,25,34
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Alpha,Melbourne,18,45
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Bravo,Sydney,23,56
+2024-02-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Charlie,Brisbane,15,43
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Alpha,Sydney,10,10
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Bravo,Sydney,17,20
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Sales,Charlie,Brisbane,16,30
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Alpha,Brisbane,15,15
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Bravo,Melbourne,18,19
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Marketing,Charlie,Melbourne,30,34
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Alpha,Melbourne,16,45
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Bravo,Sydney,15,56
+2024-03-01,VM-01,Vulnerability Management,Servers without Vulnerabilities,0.95,0.9,0.5,Production,Charlie,Brisbane,10,43
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Alpha,Sydney,6,10
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Bravo,Sydney,12,20
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Charlie,Brisbane,5,30
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Alpha,Brisbane,12,15
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Bravo,Melbourne,8,19
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Charlie,Melbourne,14,34
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Alpha,Melbourne,15,45
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Bravo,Sydney,15,56
+2024-01-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Charlie,Brisbane,24,43
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Alpha,Sydney,7,10
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Bravo,Sydney,15,20
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Charlie,Brisbane,16,30
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Alpha,Brisbane,12,15
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Bravo,Melbourne,18,19
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Charlie,Melbourne,30,34
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Alpha,Melbourne,40,45
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Bravo,Sydney,54,56
+2024-02-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Charlie,Brisbane,25,43
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Alpha,Sydney,6,10
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Bravo,Sydney,19,20
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Sales,Charlie,Brisbane,19,30
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Alpha,Brisbane,13,15
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Bravo,Melbourne,12,19
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Marketing,Charlie,Melbourne,32,34
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Alpha,Melbourne,34,45
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Bravo,Sydney,43,56
+2024-03-01,VM-02,Vulnerability Management,Servers with a vulnerability agent,0.99,0.95,0.2,Production,Charlie,Brisbane,44,43
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Alpha,Sydney,10,10
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Bravo,Sydney,20,20
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Charlie,Brisbane,30,30
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Alpha,Brisbane,15,15
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Bravo,Melbourne,19,19
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Charlie,Melbourne,34,34
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Alpha,Melbourne,45,45
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Bravo,Sydney,56,56
+2024-01-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Charlie,Brisbane,43,43
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Alpha,Sydney,10,10
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Bravo,Sydney,20,20
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Charlie,Brisbane,30,30
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Alpha,Brisbane,15,15
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Bravo,Melbourne,19,19
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Charlie,Melbourne,34,34
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Alpha,Melbourne,45,45
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Bravo,Sydney,56,56
+2024-02-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Charlie,Brisbane,43,43
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Alpha,Sydney,10,10
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Bravo,Sydney,20,20
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Sales,Charlie,Brisbane,30,30
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Alpha,Brisbane,15,15
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Bravo,Melbourne,15,19
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Marketing,Charlie,Melbourne,30,34
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Alpha,Melbourne,40,45
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Bravo,Sydney,56,56
+2024-03-01,IM-01,Identity Management,Users with compromised passwords,1,0.99,0.8,Production,Charlie,Brisbane,43,43
