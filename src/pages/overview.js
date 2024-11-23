@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { LineChart } from '@mui/x-charts/LineChart';
+
+import ChartLine from '../components/ChartLine';
 import FilterDropdown from '../components/FilterDropdown';
+
 import { fetchAndExtractCSV } from '../utils/fetchData';
-import { filterData } from '../utils/processData';
-import { pivotData } from '../utils/processData';
-import { prepareChart } from '../utils/processData';
+import { filterData, pivotData } from '../utils/processData';
+
 import '../style.css';
 
 export const calculateChart = (data, filters = {}) => {
@@ -51,10 +52,58 @@ export const calculateChart = (data, filters = {}) => {
   return chart1_pivotData_calculated3
 };
 
+export const calculateChartDimension = (data, filters = {}, z) => {
+  const filteredData = filterData(data,filters);  // Apply filters
+
+  // pivot the first layer
+  const chart2_pivotData = pivotData(filteredData, ['datestamp', 'metric_id', z], {
+    sum_total:   [ 'sum', 'total'   ],
+    sum_totalok: [ 'sum', 'totalok' ],
+    weight:      [ 'avg', 'weight'  ],
+    slo:         [ 'avg', 'slo'     ],
+    slo_min:     [ 'avg', 'slo_min' ]
+  });
+  
+  const chart2_weights = pivotData(chart2_pivotData, ['datestamp',z], {
+    sum_weight: ['sum', 'weight'],
+  });
+  const chart2_weightsLookup = Object.fromEntries(
+    chart2_weights.map((item) => [item.datestamp, item.sum_weight])
+  );
+
+  const chart2_pivotData_calculated = chart2_pivotData.map((item) => ({
+    ...item,
+    score_weighted:   item.sum_total ? (item.sum_totalok / item.sum_total) * item.weight : 0,
+    slo_weighted:     item.slo * item.weight,
+    slo_min_weighted: item.slo_min * item.weight,
+    weighted_sum:     chart2_weightsLookup[item.datestamp] || 0,
+    z:                item[z],
+  }));
+  
+  const chart2_pivotData_calculated2 = pivotData(chart2_pivotData_calculated, ['datestamp',z], {
+    score_weighted_total: [ 'sum', 'score_weighted'   ],
+    weighted_sum_total:   [ 'avg', 'weighted_sum'     ],
+    weighted_slo:         [ 'sum', 'slo_weighted'     ],
+    weighted_slo_min:     [ 'sum', 'slo_min_weighted' ]
+  });
+
+  const chart2_pivotData_calculated3 = chart2_pivotData_calculated2.map((item) => ({
+    ...item,
+    z:        item[z],
+    value:    item.weighted_sum_total ? item.score_weighted_total / item.weighted_sum_total : 0,
+    slo:      item.weighted_slo       ? item.weighted_slo         / item.weighted_sum_total : 0,
+    slo_min:  item.weighted_slo_min   ? item.weighted_slo_min     / item.weighted_sum_total : 0,
+  }));
+  
+  return chart2_pivotData_calculated3
+};
+
 const Overview = () => {
   const [rawData, setRawData] = useState(null);
   const [selected_filters, setSelected_filters] = useState('');
   const [chart1_filteredData, setChart1_filteredData] = useState(null);
+  const [chart2_filteredData, setChart2_filteredData] = useState(null);
+  const [chart3_filteredData, setChart3_filteredData] = useState(null);
 
   // Download the raw data
   useEffect(() => {
@@ -62,8 +111,16 @@ const Overview = () => {
       try {
         const data = await fetchAndExtractCSV('/summary.csv');
         setRawData(data.rawData);
+
         const chart1_aggregatedData = calculateChart(data.rawData);
         setChart1_filteredData(chart1_aggregatedData);
+
+        const chart2_aggregatedData = calculateChartDimension(data.rawData, {}, 'business_unit');
+        setChart2_filteredData(chart2_aggregatedData);
+
+        const chart3_aggregatedData = calculateChartDimension(data.rawData, {}, 'category');
+        setChart3_filteredData(chart3_aggregatedData);
+
       } catch (error) {
         console.error('Error initializing data:', error);
       }
@@ -83,6 +140,12 @@ const Overview = () => {
     if (rawData) {
       const chart1_aggregatedData = calculateChart(rawData, updatedFilters);
       setChart1_filteredData(chart1_aggregatedData);
+
+      const chart2_aggregatedData = calculateChartDimension(rawData, updatedFilters, 'business_unit');
+      setChart2_filteredData(chart2_aggregatedData);
+
+      const chart3_aggregatedData = calculateChartDimension(rawData, updatedFilters, 'category');
+      setChart3_filteredData(chart3_aggregatedData);
     }
   };
 
@@ -100,9 +163,6 @@ const Overview = () => {
       </div>
     );
   }
-
-  // prep the values for a graph
-  const chartData2 = prepareChart(chart1_filteredData,'datestamp');
   
   return (
     <div className="container">
@@ -137,46 +197,30 @@ const Overview = () => {
         </div>
 
         <div className="col-md-9">
-          <div className="card card-chart">
-            <h5 className="card-title">Organisational score over time</h5>
-            <LineChart
-              xAxis={[{
-                id: 'lineCategories',
-                data: chartData2.labels,
-                scaleType: 'band',
-              }]}
-              yAxis={[{
-                id: 'percentageAxis',
-                min: 0,
-                max: 100,
-                valueFormatter: (value) => `${value}%`,
-              }]}
-              series={[
-                {
-                  id: 'value',
-                  data: chartData2.value.map(item => (item * 100).toFixed(2)),
-                  label: 'Value',
-                  color: 'blue',
-                },
-                {
-                  id: 'slo',
-                  data: chartData2.slo.map(item => (item * 100).toFixed(2)),
-                  label: 'SLO',
-                  color: 'green',
-                  showMark: false,
-                },
-                {
-                  id: 'slo_min',
-                  data: chartData2.slo_min.map(item => (item * 100).toFixed(2)),
-                  label: 'SLO Min',
-                  color: 'yellow',
-                  showMark: false,
-                },
-              ]}
-              width={800}
-              height={400}
-            />
-          </div>
+          <ChartLine
+              id="orgCategories"
+              title="Organisational score over time"
+              data={chart1_filteredData}
+              x="datestamp"
+              y={[ "value" , "slo" , "slo_min"]}
+              custom={ { "value" : { "label" : "Score", "showMark" : true } , "slo" : { "color" : "green", "label" : "Target"}, "slo_min" : { "color" : "yellow" , label: "SLO min"} }}
+          />
+          <ChartLine
+              id="BUCategories"
+              title="Business Unit score over time"
+              data={chart2_filteredData}
+              x="datestamp"
+              y={[ "value" ]}
+              z="business_unit"
+          />
+          <ChartLine
+              id="CATCategories"
+              title="Categories"
+              data={chart3_filteredData}
+              x="datestamp"
+              y={[ "value" ]}
+              z="category"
+          />
         </div>
       </div>
     </div>

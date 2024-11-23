@@ -16,7 +16,6 @@ const Menu = () => {
               <Nav className="me-auto">
                 <Nav.Link href="/">Home</Nav.Link>
                 <Nav.Link href="/overview">Overview</Nav.Link>
-                <Nav.Link href="/business_units">Business Units</Nav.Link>
                 {/* <NavDropdown title="Dashboards" id="basic-nav-dropdown">
                   <NavDropdown.Item href="/overview">Overview</NavDropdown.Item>
                 </NavDropdown> */}
