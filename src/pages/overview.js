@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import ChartLine from '../components/ChartLine';
+import ChartSparkLine from '../components/ChartSparkLine';
 import FilterDropdown from '../components/FilterDropdown';
 
 import { fetchAndExtractCSV } from '../utils/fetchData';
@@ -200,6 +201,7 @@ const Overview = () => {
           <ChartLine
               id="orgCategories"
               title="Organisational score over time"
+              description="Organisational performance across all metrics."
               data={chart1_filteredData}
               x="datestamp"
               y={[ "value" , "slo" , "slo_min"]}
@@ -208,14 +210,16 @@ const Overview = () => {
           <ChartLine
               id="BUCategories"
               title="Business Unit score over time"
+              description="View the scores for all business units in one multi-line graph."
               data={chart2_filteredData}
               x="datestamp"
               y={[ "value" ]}
               z="business_unit"
           />
-          <ChartLine
+          <ChartSparkLine
               id="CATCategories"
               title="Categories"
+              description="A breakdown of each of the categories with their individual scores"
               data={chart3_filteredData}
               x="datestamp"
               y={[ "value" ]}

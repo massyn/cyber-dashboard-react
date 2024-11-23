@@ -1,54 +1,20 @@
-// chartLine.js
+// Charts.js
 
 import React from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
+import { processChartData } from '../utils/processData'
+import GraphContainer from '../components/GraphContainer'
 
-const ChartLine = ({ id, title, data, x, y = [], z = null, custom = null } ) => {
-
-    let data_clean;
-    if(!z) {
-        data_clean = data.map((item) =>
-            [...new Set([x, ...y])].reduce((acc, key) => { 
-                if (key in item) {
-                    acc[key] = item[key];
-                }
-                return acc;
-            }, {})
-        );
-    } else {
-        data_clean = data.reduce((acc, item) => {
-            const existing = acc.find(record => record[x] === item[x]);
-            if (existing) {
-                existing[item[z]] = item[y[0]];
-            } else {
-                const newRecord = {
-                    [x]: item[x],
-                    [item[z]]: item[y[0]],
-                };
-                acc.push(newRecord);
-            }
-            return acc;
-        }, []);
-        
-    }
-    
-    const fieldNames = Object.keys(data_clean[0]).filter(field => field !== x);
-    const labels = data_clean.map((item) => item[x]);
-    const values = fieldNames.reduce((acc, field) => {
-        acc[field] = data_clean.map((item) => item[field]);
-        return acc;
-    }, {});
-
+const ChartLine = ({ id, title, data, x, y = [], z = null, custom = null ,description = null } ) => {
+    const { labels, values } = processChartData(data, x, y, z);
     return (
-        <div className="card card-chart">
-            <h5 className="card-title">{title}</h5>
+        <GraphContainer title={title} description={description}>
             <LineChart
                 xAxis={[{
                     id: id,
                     data: labels,
                     scaleType: 'band',
                 }]}
-
                 yAxis={[{
                     id: 'percentageAxis',
                     min: 0,
@@ -56,17 +22,16 @@ const ChartLine = ({ id, title, data, x, y = [], z = null, custom = null } ) => 
                     valueFormatter: (value) => `${value}%`,
                 }]}
                 series={Object.entries(values).map(([key, data_clean], index) => ({
-                    id: key, // Use the key as the id
-                    data: data_clean.map((value) => (value * 100).toFixed(2)), // Map over the array of values
+                    id: key,
+                    data: values[key].map((value) => (value * 100).toFixed(2)),
                     label: custom?.[key]?.label ?? key,
-                    color: custom?.[key]?.color ?? ['blue', 'green', 'red', 'yellow', 'purple'][index % 5], // Cycle through colors
+                    color: custom?.[key]?.color ?? ['blue', 'green', 'red', 'yellow', 'purple', 'brown', 'black', 'orange', 'pink', 'cyan', 'magenta', 'white', 'gray'][index % 13],
                     showMark: custom?.[key]?.showMark ?? false,
                 }))}
-                
                 width={800}
                 height={400}
             />
-        </div>
+        </GraphContainer>
     );
 };
 

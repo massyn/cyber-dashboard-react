@@ -54,7 +54,6 @@ def main(file):
         [ "IT"         , "Service Desk"   ],
         [ "IT"         , "Applications"   ],
         [ "IT"         , "Cyber"          ],
-        
     ]
 
     location = [
@@ -82,17 +81,17 @@ def main(file):
     with open(file,"wt",encoding='utf-8') as q:
         q.write("datestamp,metric_id,category,title,slo,slo_min,weight,business_unit,team,location,totalok,total\n")
         cnt = 0
+        volume = len(datestamp) * len(library) * len(hierarchy) * len(location)
 
         for d in datestamp:
             for m in library:
                 for h in hierarchy:
                     for l in location:
-                        totalok = total * random.randint(0,95) / 100
+                        totalok = total * random.randint(int(cnt / volume * 100),100) / 100
 
                         q.write(f"{d},{m['metric_id']},{m['category']},{m['title']},{m['slo']},{m['slo_min']},{m['weight']},{h[0]},{h[1]},{l},{totalok},{total}\n")
                         cnt += 1
 
         print(f"\n\nWrote {cnt} lines...")
-
 
 main('summary.csv')
