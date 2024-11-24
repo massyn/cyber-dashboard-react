@@ -11,7 +11,8 @@ const Home = () => {
             <h1 className="my-4">Pages</h1>
             <ul>
                 <li><a href="/overview">Overview</a> page showing the score across an organisation, broken down by business units</li>
-                <li>Metrics (coming soon) - a table view of metrics</li>
+                <li><a href="/categories">Categories</a> is an aggregation of metrics.</li>
+                <li><a href="/metrics">Metrics</a> - a table view of metrics</li>
                 <li>Metrics detail (coming soon) - a specific metric view with trend and detail</li>
             </ul>
 

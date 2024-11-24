@@ -1,5 +1,3 @@
-// FilterDropdown.js
-
 import React from 'react';
 
 const FilterDropdown = ({ label, chartData, value, onChange, name }) => {
@@ -35,4 +33,34 @@ const FilterDropdown = ({ label, chartData, value, onChange, name }) => {
   );
 };
 
-export default FilterDropdown;
+const Filters = ({ data, filters, onChange }) => {
+
+    return (
+        <div className="card card-filters">
+            <h5 className="card-title">Filters</h5>
+            <FilterDropdown
+              label="Business Unit"
+              chartData={data}
+              value={filters.business_unit}
+              onChange={onChange}
+              name="business_unit"
+            />
+            <FilterDropdown
+              label="Team"
+              chartData={data}
+              value={filters.team}
+              onChange={onChange}
+              name="team"
+            />
+            <FilterDropdown
+              label="Location"
+              chartData={data}
+              value={filters.location}
+              onChange={onChange}
+              name="location"
+            />
+        </div>
+    );
+}
+
+export default Filters;
