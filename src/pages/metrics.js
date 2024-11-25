@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { fetchAndExtractCSV } from '../utils/fetchData';
 import { calculateChartDimension } from '../utils/calculateChartDimension';
 import Filters from '../components/Filters';
+import MetricComponent from '../components/MetricComponent';
 import { processChartData } from '../utils/processData';
 import { filterData } from '../utils/processData';
 import { pivotData } from '../utils/processData';
 import '../style.css';
 
+import { Typography } from "@mui/material";
+
 import Accordion from '@mui/material/Accordion';
-//import AccordionActions from '@mui/material/AccordionActions';
 import AccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -62,7 +64,7 @@ export const calculateMetrics = (data, filters = {}) => {
   
     return groupedByCategory;
 };
-  
+
 const Metrics = () => {
     const [rawData, setRawData] = useState(null);
     const [selected_filters, setSelected_filters] = useState('');
@@ -145,40 +147,32 @@ const Metrics = () => {
                             aria-controls="panel1-content"
                             id="panel1-header"
                         >
-                        <h6>{key} {`${(values[key]?.at(-1) * 100).toFixed(2)}%`}</h6>
+                        <div
+                            style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                width: "100%", // Ensures the full width is used
+                            }}
+                        >
+                            <div style={{ display: "flex", gap: "2em", alignItems: "center" }}>
+                                    <Typography variant="h5" sx={{ width: "75" }}>
+                                        {key} 
+                                    </Typography>
+                                </div>
+                                <div style={{ display: "flex", gap: "2em", alignItems: "center" }}>
+                                    <Typography variant="h5" sx={{ width: "75px" }}>
+                                        {`${(values[key]?.at(-1) * 100).toFixed(2)}%`}
+                                    </Typography>
+                                </div>
+                        </div>
                         </AccordionSummary>
                         <AccordionDetails>
-
-                        <table border="1" style={{ width: "100%", marginBottom: "20px" }}>
-                        <thead>
-                        <tr>
-                            <th>Metric</th>
-                            <th>Score</th>
-                        </tr>
-                        </thead>
-                        <tbody>
                         {chart2_filteredData[key].map((item, index) => (
-                            <tr key={index}>
-                            <td>{item.title}</td>
-                            <td
-  style={{
-    backgroundColor:
-      item.score >= item.slo
-        ? "green"
-        : item.score >= item.slo_min
-        ? "yellow"
-        : "red",
-    color: "white", // Ensures text contrast for readability
-    padding: "8px"  // Optional: Adds some spacing inside the cell
-  }}
->
-  {(item.score * 100).toFixed(2)}%
-</td>
-
-                            </tr>
-                        ))}
-                        </tbody>
-                        </table>
+                            <MetricComponent
+                                metric={item}
+                            />
+                        )) }
                         </AccordionDetails>
                     </Accordion>
                 ))}
