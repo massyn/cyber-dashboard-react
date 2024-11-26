@@ -141,22 +141,23 @@ const Metrics = () => {
 
                 <div className="col-md-9">
                 {Object.entries(values).map(([key], index) => (
-                    <Accordion>
+                    <Accordion key={index}>
                         <AccordionSummary
                             expandIcon={<ExpandMoreIcon />}
                             aria-controls="panel1-content"
                             id="panel1-header"
+                            key={index}
                         >
                         <div
                             style={{
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center",
-                                width: "100%", // Ensures the full width is used
+                                width: "100%",
                             }}
                         >
                             <div style={{ display: "flex", gap: "2em", alignItems: "center" }}>
-                                    <Typography variant="h5" sx={{ width: "75" }}>
+                                    <Typography variant="h5" sx={{ width: "75px" }}>
                                         {key} 
                                     </Typography>
                                 </div>
@@ -165,7 +166,7 @@ const Metrics = () => {
                                         {`${(values[key]?.at(-1) * 100).toFixed(2)}%`}
                                     </Typography>
                                 </div>
-                        </div>
+                            </div>
                         </AccordionSummary>
                         <AccordionDetails>
                         {chart2_filteredData[key].map((item, index) => (
