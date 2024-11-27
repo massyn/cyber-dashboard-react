@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { LineChart } from '@mui/x-charts/LineChart';
-import { processChartData } from '../utils/processData'
+import { processChartData } from '../utils/processChartData'
 import GraphContainer from '../components/GraphContainer'
 
 const ChartLine = ({ id, title, data, x, y = [], z = null, custom = null ,description = null } ) => {

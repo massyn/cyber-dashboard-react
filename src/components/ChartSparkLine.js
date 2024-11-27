@@ -3,7 +3,7 @@
 import React from 'react';
 import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
 import { Gauge } from '@mui/x-charts/Gauge';
-import { processChartData } from '../utils/processData';
+import { processChartData } from '../utils/processChartData';
 import GraphContainer from './GraphContainer';
 
 const ChartSparkLine = ({ id, title, data, x, y = [], z = null, custom = null ,description = null }) => {
@@ -17,7 +17,7 @@ const ChartSparkLine = ({ id, title, data, x, y = [], z = null, custom = null ,d
                     <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
                         <div style={{ flexShrink: 0, width: '100px' }}> {/* Fixed width for the Gauge */}
                             <Gauge
-                                value={(values[key]?.at(-1) * 100).toFixed(2)}
+                                value={parseFloat((values[key]?.at(-1) * 100).toFixed(2))}
                                 startAngle={-110}
                                 endAngle={110}
                                 text={`${(values[key]?.at(-1) * 100).toFixed(2)}%`}

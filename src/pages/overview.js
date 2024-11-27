@@ -4,54 +4,9 @@ import ChartLine from '../components/ChartLine';
 import Filters from '../components/Filters';
 
 import { fetchAndExtractCSV } from '../utils/fetchData';
-import { filterData, pivotData } from '../utils/processData';
-import { calculateChartDimension } from '../utils/calculateChartDimension';
+import { weightedCalculation } from '../utils/weightedCalculations';
 
 import '../style.css';
-
-export const calculateChart = (data, filters = {}) => {
-  const filteredData = filterData(data,filters);  // Apply filters
-
-  // pivot the first layer
-  const chart1_pivotData = pivotData(filteredData, ['datestamp', 'metric_id'], {
-    sum_total:   [ 'sum', 'total'   ],
-    sum_totalok: [ 'sum', 'totalok' ],
-    weight:      [ 'avg', 'weight'  ],
-    slo:         [ 'avg', 'slo'     ],
-    slo_min:     [ 'avg', 'slo_min' ]
-  });
-  
-  const chart1_weights = pivotData(chart1_pivotData, ['datestamp'], {
-    sum_weight: ['sum', 'weight'],
-  });
-  const chart1_weightsLookup = Object.fromEntries(
-    chart1_weights.map((item) => [item.datestamp, item.sum_weight])
-  );
-
-  const chart1_pivotData_calculated = chart1_pivotData.map((item) => ({
-    ...item,
-    score_weighted:   item.sum_total ? (item.sum_totalok / item.sum_total) * item.weight : 0,
-    slo_weighted:     item.slo * item.weight,
-    slo_min_weighted: item.slo_min * item.weight,
-    weighted_sum:     chart1_weightsLookup[item.datestamp] || 0,
-  }));
-  
-  const chart1_pivotData_calculated2 = pivotData(chart1_pivotData_calculated, ['datestamp'], {
-    score_weighted_total: [ 'sum', 'score_weighted'   ],
-    weighted_sum_total:   [ 'avg', 'weighted_sum'     ],
-    weighted_slo:         [ 'sum', 'slo_weighted'     ],
-    weighted_slo_min:     [ 'sum', 'slo_min_weighted' ]
-  });
-
-  const chart1_pivotData_calculated3 = chart1_pivotData_calculated2.map((item) => ({
-    ...item,
-    value:    item.weighted_sum_total ? item.score_weighted_total / item.weighted_sum_total : 0,
-    slo:      item.weighted_slo       ? item.weighted_slo         / item.weighted_sum_total : 0,
-    slo_min:  item.weighted_slo_min   ? item.weighted_slo_min     / item.weighted_sum_total : 0,
-  }));
-  
-  return chart1_pivotData_calculated3
-};
 
 const Overview = () => {
   const [rawData, setRawData] = useState(null);
@@ -66,10 +21,10 @@ const Overview = () => {
         const data = await fetchAndExtractCSV('/summary.csv');
         setRawData(data.rawData);
 
-        const chart1_aggregatedData = calculateChart(data.rawData);
+        const chart1_aggregatedData = weightedCalculation(data.rawData);
         setChart1_filteredData(chart1_aggregatedData);
 
-        const chart2_aggregatedData = calculateChartDimension(data.rawData, {}, 'business_unit');
+        const chart2_aggregatedData = weightedCalculation(data.rawData, {}, 'business_unit');
         setChart2_filteredData(chart2_aggregatedData);
 
       } catch (error) {
@@ -89,10 +44,10 @@ const Overview = () => {
     setSelected_filters(updatedFilters);
 
     if (rawData) {
-      const chart1_aggregatedData = calculateChart(rawData, updatedFilters);
+      const chart1_aggregatedData = weightedCalculation(rawData, updatedFilters);
       setChart1_filteredData(chart1_aggregatedData);
 
-      const chart2_aggregatedData = calculateChartDimension(rawData, updatedFilters, 'business_unit');
+      const chart2_aggregatedData = weightedCalculation(rawData, updatedFilters, 'business_unit');
       setChart2_filteredData(chart2_aggregatedData);
     }
   };

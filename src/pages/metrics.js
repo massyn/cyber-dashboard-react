@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAndExtractCSV } from '../utils/fetchData';
-import { calculateChartDimension } from '../utils/calculateChartDimension';
+import { weightedCalculation } from '../utils/weightedCalculations';
 import Filters from '../components/Filters';
 import MetricComponent from '../components/MetricComponent';
-import { processChartData } from '../utils/processData';
+import { processChartData } from '../utils/processChartData';
 import { filterData } from '../utils/processData';
 import { pivotData } from '../utils/processData';
 import '../style.css';
@@ -78,7 +78,7 @@ const Metrics = () => {
                 const data = await fetchAndExtractCSV('/summary.csv');
                 setRawData(data.rawData);
 
-                const chart1_aggregatedData = calculateChartDimension(data.rawData, {}, 'category');
+                const chart1_aggregatedData = weightedCalculation(data.rawData, {}, 'category');
                 setChart1_filteredData(chart1_aggregatedData);
 
                 const chart2_aggregatedData = calculateMetrics(data.rawData, {});
@@ -100,7 +100,7 @@ const Metrics = () => {
         setSelected_filters(updatedFilters);
 
         if (rawData) {
-        const chart1_aggregatedData = calculateChartDimension(rawData, updatedFilters, 'category');
+        const chart1_aggregatedData = weightedCalculation(rawData, updatedFilters, 'category');
         setChart1_filteredData(chart1_aggregatedData);
 
         const chart2_aggregatedData = calculateMetrics(rawData, updatedFilters);
@@ -122,7 +122,7 @@ const Metrics = () => {
         </div>
         );
     }
-
+    console.log(chart1_filteredData);
     const { values } = processChartData(chart1_filteredData, 'datestamp', ['value'], 'category');
 
     
@@ -157,8 +157,8 @@ const Metrics = () => {
                             }}
                         >
                             <div style={{ display: "flex", gap: "2em", alignItems: "center" }}>
-                                    <Typography variant="h5" sx={{ width: "75px" }}>
-                                        {key} 
+                                    <Typography variant="h5" sx={{ width: "750px" }}>
+                                        {key}
                                     </Typography>
                                 </div>
                                 <div style={{ display: "flex", gap: "2em", alignItems: "center" }}>

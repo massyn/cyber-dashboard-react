@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { fetchAndExtractCSV } from '../utils/fetchData';
-import { calculateChartDimension } from '../utils/calculateChartDimension';
 import Filters from '../components/Filters';
 import ChartSparkLine from '../components/ChartSparkLine';
+import { weightedCalculation } from '../utils/weightedCalculations';
 import '../style.css';
 
 const Categories = () => {
@@ -17,7 +17,7 @@ const Categories = () => {
         const data = await fetchAndExtractCSV('/summary.csv');
         setRawData(data.rawData);
 
-        const chart1_aggregatedData = calculateChartDimension(data.rawData, {}, 'category');
+        const chart1_aggregatedData = weightedCalculation(data.rawData, {}, 'category');
         setChart1_filteredData(chart1_aggregatedData);
 
       } catch (error) {
@@ -37,7 +37,7 @@ const Categories = () => {
     setSelected_filters(updatedFilters);
 
     if (rawData) {
-      const chart1_aggregatedData = calculateChartDimension(rawData, updatedFilters, 'category');
+      const chart1_aggregatedData = weightedCalculation(rawData, updatedFilters, 'category');
       setChart1_filteredData(chart1_aggregatedData);
     }
   };
