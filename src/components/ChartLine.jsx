@@ -28,6 +28,7 @@ const ChartLine = ({ id, title, data, x, y = [], z = null, custom = null ,descri
                     color: custom?.[key]?.color ?? ['blue', 'green', 'red', 'yellow', 'purple', 'brown', 'black', 'orange', 'pink', 'cyan', 'magenta', 'white', 'gray'][index % 13],
                     showMark: custom?.[key]?.showMark ?? false,
                 }))}
+                slotProps={{ legend: { hidden: true } }}
                 width={800}
                 height={400}
             />
