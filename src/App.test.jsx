@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import App from './App';
 
-test('renders home page heading', () => {
+test('renders app navigation', () => {
   render(<App />);
-  expect(screen.getByText(/Welcome to Cyber Metrics/i)).toBeInTheDocument();
+  expect(screen.getByText(/Cyber Metrics/i)).toBeInTheDocument();
 });

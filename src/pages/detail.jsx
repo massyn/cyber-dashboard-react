@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { fetchAndExtractCSV } from '../utils/fetchData';
+import { loadData } from '../utils/fetchData';
 import { filterData, pivotData } from '../utils/processData';
 import ChartLine from '../components/ChartLine';
 import Filters from '../components/Filters';
@@ -30,7 +30,7 @@ const COLUMNS = [
   { key: 'business_unit', label: 'Business Unit' },
   { key: 'team',          label: 'Team' },
   { key: 'location',      label: 'Location' },
-  { key: 'compliant',     label: 'Compliant' },
+  { key: 'compliance',    label: 'Compliance' },
   { key: 'detail',        label: 'Detail' },
 ];
 
@@ -54,13 +54,10 @@ const Detail = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const [summary, detail] = await Promise.all([
-          fetchAndExtractCSV('/summary.csv'),
-          fetchAndExtractCSV('/detail.csv'),
-        ]);
-        setRawData(summary.rawData);
-        setDetailData(detail.rawData);
-        computeData(summary.rawData, detail.rawData, {});
+        const { summaryData, detailData: detail } = await loadData();
+        setRawData(summaryData);
+        setDetailData(detail);
+        computeData(summaryData, detail, {});
       } catch (err) {
         console.error('Error loading data:', err);
       }
@@ -102,7 +99,7 @@ const Detail = () => {
     setEvidence(
       detailRows
         .filter(r => r.datestamp === latest)
-        .map(r => ({ ...r, compliant: parseFloat(r.compliant) }))
+        .map(r => ({ ...r, compliance: parseFloat(r.compliance) }))
     );
     setPage(0);
   };
@@ -121,8 +118,8 @@ const Detail = () => {
   };
 
   const filteredEvidence = evidence.filter(r => {
-    if (complianceFilter === 'compliant')     return r.compliant >= 1;
-    if (complianceFilter === 'non-compliant') return r.compliant < 1;
+    if (complianceFilter === 'compliant')     return r.compliance >= 1;
+    if (complianceFilter === 'non-compliant') return r.compliance < 1;
     return true;
   });
 
@@ -221,7 +218,7 @@ const Detail = () => {
                       {COLUMNS.map(col => (
                         <TableCell
                           key={col.key}
-                          align={col.key === 'compliant' ? 'right' : 'left'}
+                          align={col.key === 'compliance' ? 'right' : 'left'}
                           sortDirection={sortCol === col.key ? sortDir : false}
                         >
                           {col.key === 'status' ? col.label : (
@@ -239,7 +236,7 @@ const Detail = () => {
                   </TableHead>
                   <TableBody>
                     {paginated.map((row, i) => {
-                      const pct = row.compliant * 100;
+                      const pct = row.compliance * 100;
                       const chipColor = pct >= 100 ? 'success' : pct <= 0 ? 'error' : 'warning';
                       return (
                         <TableRow key={i} hover>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ChartLine from '../components/ChartLine';
 import Filters from '../components/Filters';
 import GraphContainer from '../components/GraphContainer';
-import { fetchAndExtractCSV } from '../utils/fetchData';
+import { loadData } from '../utils/fetchData';
 import { weightedCalculation } from '../utils/weightedCalculations';
 import '../style.css';
 
@@ -62,9 +62,9 @@ const Overview = () => {
   useEffect(() => {
     const init = async () => {
       try {
-        const { rawData: data } = await fetchAndExtractCSV('/summary.csv');
-        setRawData(data);
-        compute(data, {});
+        const { summaryData } = await loadData();
+        setRawData(summaryData);
+        compute(summaryData, {});
       } catch (error) {
         console.error('Error initialising data:', error);
       }

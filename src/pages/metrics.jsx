@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { fetchAndExtractCSV } from '../utils/fetchData';
+import { loadData } from '../utils/fetchData';
 import { weightedCalculation } from '../utils/weightedCalculations';
 import Filters from '../components/Filters';
 import MetricComponent from '../components/MetricComponent';
@@ -62,10 +62,10 @@ const Metrics = () => {
     useEffect(() => {
         const initializeData = async () => {
             try {
-                const data = await fetchAndExtractCSV('/summary.csv');
-                setRawData(data.rawData);
-                setCategoryTrends(weightedCalculation(data.rawData, {}, 'category'));
-                setMetricsByCategory(calculateMetrics(data.rawData, {}));
+                const { summaryData } = await loadData();
+                setRawData(summaryData);
+                setCategoryTrends(weightedCalculation(summaryData, {}, 'category'));
+                setMetricsByCategory(calculateMetrics(summaryData, {}));
             } catch (error) {
                 console.error('Error initialising data:', error);
             }
