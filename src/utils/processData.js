@@ -58,7 +58,7 @@ export const pivotData = (data, dimensions, aggregations) => {
                     resultItem[aggName] = group.length;
                     break;
                 case "last":
-                    resultItem[aggName] = group.reduce((sum, item) => parseFloat(item[field] || 0), 0);
+                    resultItem[aggName] = parseFloat(group.at(-1)[field] || 0);
                     break;
                 default:
                     throw new Error(`Unsupported aggregation operation: ${operation}`);

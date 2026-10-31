@@ -1,9 +1,8 @@
+import { filterData } from './processData';
 
 export const weightedCalculation = (data, filters = {}, dimension = null) => {
-    // Apply the filter first
-    const filteredData = data.filter(item =>
-        Object.entries(filters).every(([key, value]) => value === null || item[key] === value)
-    );
+    // Apply the filter first; an empty filter value ("All") matches everything
+    const filteredData = filterData(data, filters);
 
     // Layer 1 - Aggregate the totals for each of the metrics
     const layer1 = {};

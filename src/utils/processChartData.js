@@ -1,4 +1,10 @@
+// Reshapes rows into chart labels (x) and one numeric series per field in y.
+// With z, rows are pivoted so each distinct z value becomes its own series of y[0].
 export const processChartData = (data, x, y, z) => {
+    if (!data || data.length === 0) {
+        return { labels: [], values: {} };
+    }
+
     let data_clean;
 
     if (!z) {
@@ -16,32 +22,28 @@ export const processChartData = (data, x, y, z) => {
             if (existing) {
                 existing[item[z]] = item[y[0]];
             } else {
-                const newRecord = {
+                acc.push({
                     [x]: item[x],
                     [item[z]]: item[y[0]],
-                };
-                acc.push(newRecord);
+                });
             }
             return acc;
         }, []);
     }
 
-    const fieldNames = Object.keys(data_clean[0]).filter(field => field !== x);
+    const fieldNames = [...new Set(data_clean.flatMap(record => Object.keys(record)))].filter(field => field !== x);
 
-    // Sort labels and reorder values accordingly
-    const sortedData = data_clean.sort((a, b) => 
-        (a[x] > b[x] ? 1 : -1)
-    );
+    const sortedData = [...data_clean].sort((a, b) => (a[x] > b[x] ? 1 : -1));
 
     const labels = sortedData.map((item) => item[x]);
 
     const values = fieldNames.reduce((acc, field) => {
         acc[field] = sortedData.map((item) => {
-            const value = item[field];
-            return isNaN(value) || value === null ? 0 : value; // Replace NaN or null with 0
+            const value = Number(item[field]);
+            return Number.isFinite(value) ? value : 0;
         });
         return acc;
     }, {});
-    
+
     return { labels, values };
 };

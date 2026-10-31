@@ -1,159 +1,111 @@
-import React, { useEffect, useState } from 'react';
-import { loadData } from '../utils/fetchData';
-import { weightedCalculation } from '../utils/weightedCalculations';
+import { useMemo, useState } from 'react';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Container, Grid, Typography, useTheme } from '@mui/material';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { lineClasses } from '@mui/x-charts/LineChart';
+import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
 import Filters from '../components/Filters';
 import MetricComponent from '../components/MetricComponent';
+import PageHeader from '../components/PageHeader';
+import StatusChip from '../components/StatusChip';
+import DataGate from '../data/DataGate';
+import { useDashboardData } from '../data/useDashboardData';
+import { calculateMetrics } from '../utils/calculateMetrics';
 import { processChartData } from '../utils/processChartData';
-import { filterData } from '../utils/processData';
-import { pivotData } from '../utils/processData';
-import '../style.css';
+import { complianceStatus, formatPercent } from '../utils/status';
+import { weightedCalculation } from '../utils/weightedCalculations';
 
-import { Typography } from '@mui/material';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { SparkLineChart } from '@mui/x-charts/SparkLineChart';
+const MetricsContent = ({ summaryData }) => {
+    const { vars } = useTheme();
+    const [filters, setFilters] = useState({});
 
-export const calculateMetrics = (data, filters = {}) => {
-    const filteredData = filterData(data, filters);
-
-    const latestDatestampByMetricId = filteredData.reduce((acc, item) => {
-        const { title, datestamp } = item;
-        if (!acc[title] || new Date(datestamp) > new Date(acc[title])) {
-            acc[title] = datestamp;
-        }
-        return acc;
-    }, {});
-
-    const chart1_pivotData = pivotData(filteredData, ['datestamp', 'category', 'title', 'metric_id'], {
-        sum_total:   ['sum', 'total'],
-        sum_totalok: ['sum', 'totalok'],
-        weight:      ['avg', 'weight'],
-        slo:         ['avg', 'slo'],
-        slo_min:     ['avg', 'slo_min'],
-    });
-
-    const chart1_pivotData_latest = chart1_pivotData.filter(
-        (item) => item.datestamp === latestDatestampByMetricId[item.title]
-    );
-
-    const chart1_pivotData_calculated = chart1_pivotData_latest.map((item) => ({
-        ...item,
-        score:   item.sum_total ? item.sum_totalok / item.sum_total : 0,
-        slo:     item.slo,
-        slo_min: item.slo_min,
-    }));
-
-    return chart1_pivotData_calculated.reduce((acc, item) => {
-        const { category } = item;
-        if (!acc[category]) acc[category] = [];
-        acc[category].push(item);
-        return acc;
-    }, {});
-};
-
-const Metrics = () => {
-    const [rawData,           setRawData]           = useState(null);
-    const [selected_filters,  setSelected_filters]  = useState('');
-    const [categoryTrends,    setCategoryTrends]    = useState(null);
-    const [metricsByCategory, setMetricsByCategory] = useState(null);
-
-    useEffect(() => {
-        const initializeData = async () => {
-            try {
-                const { summaryData } = await loadData();
-                setRawData(summaryData);
-                setCategoryTrends(weightedCalculation(summaryData, {}, 'category'));
-                setMetricsByCategory(calculateMetrics(summaryData, {}));
-            } catch (error) {
-                console.error('Error initialising data:', error);
-            }
+    const { categories, metricsByCategory } = useMemo(() => {
+        const trends = weightedCalculation(summaryData, filters, 'category');
+        const { values } = processChartData(trends, 'datestamp', ['value'], 'category');
+        const latestDate = trends.reduce((max, r) => (r.datestamp > max ? r.datestamp : max), '');
+        return {
+            categories: Object.entries(values).map(([name, series]) => {
+                const latest = trends.find(r => r.category === name && r.datestamp === latestDate);
+                return { name, series, latest };
+            }),
+            metricsByCategory: calculateMetrics(summaryData, filters),
         };
-        initializeData();
-    }, []);
+    }, [summaryData, filters]);
 
     const handleDropdownChange = (event) => {
         const { name, value } = event.target;
-        const updatedFilters = { ...selected_filters, [name]: value };
-        setSelected_filters(updatedFilters);
-        if (rawData) {
-            setCategoryTrends(weightedCalculation(rawData, updatedFilters, 'category'));
-            setMetricsByCategory(calculateMetrics(rawData, updatedFilters));
-        }
+        setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    if (!categoryTrends || !rawData) {
-        return (
-            <div className="spinner-container">
-                <div className="text-center">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
-                    </div>
-                    <h3 className="mt-3 text-dark">Please wait while the data is loading...</h3>
-                    <p className="text-muted">This may take a moment depending on the size of your data.</p>
-                </div>
-            </div>
-        );
-    }
-
-    const { values: sparkValues } = processChartData(categoryTrends, 'datestamp', ['value'], 'category');
-
     return (
-        <div className="container">
-            <h1 className="my-4">Metrics</h1>
-            <p>Metrics are grouped by category. Expand a category to see the individual metrics.</p>
-            <div className="row">
-                <div className="col-md-3">
-                    <Filters
-                        data={rawData}
-                        onChange={handleDropdownChange}
-                        filters={selected_filters}
-                    />
-                </div>
+        <Container sx={{ pb: 6 }}>
+            <PageHeader title="Metrics" subtitle="Grouped by category. Expand a category to see its metrics." />
+            <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 3 }}>
+                    <Filters data={summaryData} onChange={handleDropdownChange} filters={filters} onClear={() => setFilters({})} />
+                </Grid>
 
-                <div className="col-md-9">
-                    {Object.entries(sparkValues).map(([category], index) => (
-                        <Accordion key={index}>
-                            <AccordionSummary
-                                expandIcon={<ExpandMoreIcon />}
-                                aria-controls={`panel-${index}-content`}
-                                id={`panel-${index}-header`}
-                            >
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    width: '100%',
-                                    gap: '1.5em',
-                                    paddingRight: '0.5em',
-                                }}>
-                                    <Typography variant="h6" sx={{ flex: 1, fontWeight: 500 }}>
-                                        {category}
-                                    </Typography>
-                                    <div style={{ pointerEvents: 'none' }}>
-                                        <SparkLineChart
-                                            plotType="line"
-                                            data={sparkValues[category] || []}
-                                            height={48}
-                                            width={160}
-                                            colors={['#1565c0']}
-                                        />
-                                    </div>
-                                    <Typography variant="h6" sx={{ width: '72px', textAlign: 'right', fontWeight: 600 }}>
-                                        {`${(sparkValues[category]?.at(-1) * 100).toFixed(1)}%`}
-                                    </Typography>
-                                </div>
-                            </AccordionSummary>
-                            <AccordionDetails>
-                                {(metricsByCategory[category] ?? []).map((item, i) => (
-                                    <MetricComponent key={i} metric={item} />
-                                ))}
-                            </AccordionDetails>
-                        </Accordion>
-                    ))}
-                </div>
-            </div>
-        </div>
+                <Grid size={{ xs: 12, md: 9 }}>
+                    {categories.length === 0 && (
+                        <Typography color="text.secondary">No metrics for the selected filters.</Typography>
+                    )}
+                    {categories.map(({ name, series, latest }, index) => {
+                        const metrics = metricsByCategory[name] ?? [];
+                        return (
+                            <Accordion key={name} defaultExpanded={index === 0}>
+                                <AccordionSummary
+                                    expandIcon={<ExpandMoreIcon />}
+                                    aria-controls={`panel-${index}-content`}
+                                    id={`panel-${index}-header`}
+                                    sx={{ px: 2, '& .MuiAccordionSummary-content': { my: 1.5 } }}
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: { xs: 1.5, sm: 3 }, pr: 1 }}>
+                                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                                            <Typography variant="h2" component="h2">{name}</Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                {metrics.length} {metrics.length === 1 ? 'metric' : 'metrics'}
+                                            </Typography>
+                                        </Box>
+                                        {latest && (
+                                            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+                                                <StatusChip status={complianceStatus(latest.value, latest.slo, latest.slo_min)} />
+                                            </Box>
+                                        )}
+                                        <Box sx={{ pointerEvents: 'none', display: { xs: 'none', sm: 'block' } }}>
+                                            <SparkLineChart
+                                                plotType="line"
+                                                data={series}
+                                                height={40}
+                                                width={140}
+                                                area
+                                                color={vars.palette.primary.main}
+                                                sx={{ [`& .${lineClasses.area}`]: { fillOpacity: 0.1 } }}
+                                            />
+                                        </Box>
+                                        <Typography sx={{ width: 76, textAlign: 'right', fontSize: '1.5rem', fontWeight: 650 }}>
+                                            {formatPercent(series.at(-1))}
+                                        </Typography>
+                                    </Box>
+                                </AccordionSummary>
+                                <AccordionDetails sx={{ p: 0 }}>
+                                    {metrics.map(item => (
+                                        <MetricComponent key={item.metric_id} metric={item} />
+                                    ))}
+                                </AccordionDetails>
+                            </Accordion>
+                        );
+                    })}
+                </Grid>
+            </Grid>
+        </Container>
+    );
+};
+
+const Metrics = () => {
+    const { data, error } = useDashboardData();
+    return (
+        <DataGate data={data} error={error}>
+            {({ summaryData }) => <MetricsContent summaryData={summaryData} />}
+        </DataGate>
     );
 };
 

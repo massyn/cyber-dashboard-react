@@ -1,149 +1,124 @@
-import React, { useEffect, useState } from 'react';
-import ChartLine from '../components/ChartLine';
+import { useMemo, useState } from 'react';
+import { Container, Grid, Typography } from '@mui/material';
 import Filters from '../components/Filters';
-import GraphContainer from '../components/GraphContainer';
-import { loadData } from '../utils/fetchData';
+import PageHeader from '../components/PageHeader';
+import RankedBars from '../components/RankedBars';
+import ScoreTrendChart from '../components/ScoreTrendChart';
+import StatTile from '../components/StatTile';
+import StatusChip from '../components/StatusChip';
+import DataGate from '../data/DataGate';
+import { useDashboardData } from '../data/useDashboardData';
+import { calculateMetrics } from '../utils/calculateMetrics';
+import { complianceStatus, formatPercent, formatPeriod } from '../utils/status';
 import { weightedCalculation } from '../utils/weightedCalculations';
-import '../style.css';
 
-const extractLatest = (data, dimensionKey) => {
-  if (!data || data.length === 0) return { labels: [], values: [] };
+const byDate = (a, b) => (a.datestamp > b.datestamp ? 1 : -1);
+
+// Rows for the latest period, lowest score first, shaped for RankedBars.
+const latestRanked = (data, dimensionKey) => {
+  if (data.length === 0) return [];
   const latest = data.reduce((max, r) => (r.datestamp > max ? r.datestamp : max), '');
-  const rows = data
+  return data
     .filter(r => r.datestamp === latest)
-    .sort((a, b) => a.value - b.value);
-  return {
-    labels: rows.map(r => r[dimensionKey]),
-    values: rows.map(r => parseFloat((r.value * 100).toFixed(1))),
-  };
+    .sort((a, b) => a.value - b.value)
+    .map(r => ({ label: r[dimensionKey], value: r.value, slo: r.slo, slo_min: r.slo_min }));
 };
 
-const HorizontalBar = ({ title, labels, values }) => {
-  if (labels.length === 0) return null;
+const OverviewContent = ({ summaryData }) => {
+  const [filters, setFilters] = useState({});
+
+  const { orgTrend, buRows, catRows, metricCounts } = useMemo(() => {
+    const metrics = Object.values(calculateMetrics(summaryData, filters)).flat();
+    const statuses = metrics.map(m => complianceStatus(m.score, m.slo, m.slo_min));
+    return {
+      orgTrend: weightedCalculation(summaryData, filters).sort(byDate),
+      buRows:   latestRanked(weightedCalculation(summaryData, filters, 'business_unit'), 'business_unit'),
+      catRows:  latestRanked(weightedCalculation(summaryData, filters, 'category'), 'category'),
+      metricCounts: {
+        total:    metrics.length,
+        good:     statuses.filter(s => s === 'good').length,
+        critical: statuses.filter(s => s === 'critical').length,
+      },
+    };
+  }, [summaryData, filters]);
+
+  const handleDropdownChange = (event) => {
+    const { name, value } = event.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const latest = orgTrend.at(-1);
+  const previous = orgTrend.at(-2);
+
   return (
-    <GraphContainer title={title}>
-      <div style={{ padding: '8px 0' }}>
-        {labels.map((label, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ width: '130px', textAlign: 'right', paddingRight: '10px', fontSize: '13px', flexShrink: 0, color: '#333' }}>
-              {label}
-            </div>
-            <div style={{ flex: 1, backgroundColor: '#e0e8f0', borderRadius: '4px', height: '28px', position: 'relative' }}>
-              <div style={{
-                width: `${values[i]}%`,
-                backgroundColor: '#1565c0',
-                height: '100%',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
-                paddingRight: '8px',
-                minWidth: '44px',
-              }}>
-                <span style={{ color: 'white', fontSize: '11px', fontWeight: 600 }}>
-                  {values[i]?.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </GraphContainer>
+    <Container sx={{ pb: 6 }}>
+      <PageHeader
+        title="Security posture"
+        subtitle={latest ? `Weighted compliance across all metrics · latest period ${formatPeriod(latest.datestamp)}` : null}
+      />
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Filters data={summaryData} onChange={handleDropdownChange} filters={filters} onClear={() => setFilters({})} />
+        </Grid>
+
+        <Grid size={{ xs: 12, md: 9 }}>
+          {!latest ? (
+            <Typography color="text.secondary">No data for the selected filters.</Typography>
+          ) : (
+            <>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 5 }}>
+                  <StatTile
+                    hero
+                    label="Organisational score"
+                    value={formatPercent(latest.value)}
+                    delta={previous ? latest.value - previous.value : null}
+                    deltaPeriod={previous ? formatPeriod(previous.datestamp) : null}
+                    footer={<StatusChip status={complianceStatus(latest.value, latest.slo, latest.slo_min)} />}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3, lg: 'grow' }}>
+                  <StatTile label="Target" value={formatPercent(latest.slo, 0)} footer={
+                    <Typography variant="body2" color="text.secondary">Minimum {formatPercent(latest.slo_min, 0)}</Typography>
+                  } />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3, lg: 'grow' }}>
+                  <StatTile label="Metrics on target" value={`${metricCounts.good} / ${metricCounts.total}`} footer={
+                    metricCounts.critical > 0
+                      ? <StatusChip status="critical" label={`${metricCounts.critical} below minimum`} />
+                      : <StatusChip status="good" label="None below minimum" />
+                  } />
+                </Grid>
+              </Grid>
+
+              <ScoreTrendChart
+                title="Score over time"
+                subtitle="Weighted organisational score against target and minimum"
+                data={orgTrend}
+              />
+
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, lg: 6 }}>
+                  <RankedBars title="Business units" subtitle="Latest period, lowest first" rows={buRows} />
+                </Grid>
+                <Grid size={{ xs: 12, lg: 6 }}>
+                  <RankedBars title="Categories" subtitle="Latest period, lowest first" rows={catRows} />
+                </Grid>
+              </Grid>
+            </>
+          )}
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 
 const Overview = () => {
-  const [rawData,          setRawData]          = useState(null);
-  const [selected_filters, setSelected_filters] = useState('');
-  const [orgTrend,         setOrgTrend]         = useState(null);
-  const [buLatest,         setBuLatest]         = useState({ labels: [], values: [] });
-  const [catLatest,        setCatLatest]        = useState({ labels: [], values: [] });
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { summaryData } = await loadData();
-        setRawData(summaryData);
-        compute(summaryData, {});
-      } catch (error) {
-        console.error('Error initialising data:', error);
-      }
-    };
-    init();
-  }, []);
-
-  const compute = (data, filters) => {
-    setOrgTrend(weightedCalculation(data, filters));
-    setBuLatest(extractLatest(weightedCalculation(data, filters, 'business_unit'), 'business_unit'));
-    setCatLatest(extractLatest(weightedCalculation(data, filters, 'category'), 'category'));
-  };
-
-  const handleDropdownChange = (event) => {
-    const { name, value } = event.target;
-    const updated = { ...selected_filters, [name]: value };
-    setSelected_filters(updated);
-    if (rawData) compute(rawData, updated);
-  };
-
-  if (!orgTrend || !rawData) {
-    return (
-      <div className="spinner-container">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <h3 className="mt-3 text-dark">Please wait while the data is loading...</h3>
-          <p className="text-muted">This may take a moment depending on the size of your data.</p>
-        </div>
-      </div>
-    );
-  }
-
+  const { data, error } = useDashboardData();
   return (
-    <div className="container">
-      <h1 className="my-4">Overview</h1>
-      <div className="row">
-        <div className="col-md-3">
-          <Filters
-            data={rawData}
-            onChange={handleDropdownChange}
-            filters={selected_filters}
-          />
-        </div>
-
-        <div className="col-md-9">
-          <ChartLine
-            id="orgScore"
-            title="Organisational score over time"
-            data={orgTrend}
-            x="datestamp"
-            y={['value', 'slo', 'slo_min']}
-            custom={{
-              value:   { label: 'Score', showMark: true },
-              slo:     { color: 'green',  label: 'Target'  },
-              slo_min: { color: 'yellow', label: 'SLO min' },
-            }}
-          />
-
-          <div className="row">
-            <div className="col-md-6">
-              <HorizontalBar
-                title="Business Units"
-                labels={buLatest.labels}
-                values={buLatest.values}
-              />
-            </div>
-            <div className="col-md-6">
-              <HorizontalBar
-                title="Categories"
-                labels={catLatest.labels}
-                values={catLatest.values}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <DataGate data={data} error={error}>
+      {({ summaryData }) => <OverviewContent summaryData={summaryData} />}
+    </DataGate>
   );
 };
 
