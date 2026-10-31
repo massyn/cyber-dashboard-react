@@ -17,10 +17,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: npm ci, build and test
+      - name: Install, lint, test and build
         run: |
           npm ci
-          npm run build --if-present
+          npm run lint
+          npm test
+          npm run build
 
       - name: Publish to Cloudflare
         uses: cloudflare/wrangler-action@v4
@@ -30,8 +32,29 @@ jobs:
           command: pages deploy dist --project-name=cyber-dashboard
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
+  tools:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools
+    steps:
+      - name: Check me out
+        uses: actions/checkout@v7
+
+      - name: Use Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Lint and test the data loader
+        run: |
+          pip install -q -r requirements.txt -r requirements-dev.txt
+          ruff check .
+          black --check .
+          pytest -q
+
   notify:
-    needs: [build]
+    needs: [build, tools]
     if: ${{ !cancelled() && github.ref == 'refs/heads/main' && !contains(needs.*.result, 'cancelled') }}
     runs-on: ubuntu-latest
     steps:
