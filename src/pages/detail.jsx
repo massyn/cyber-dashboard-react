@@ -1,13 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { loadData } from '../utils/fetchData';
-import { filterData, pivotData } from '../utils/processData';
-import ChartLine from '../components/ChartLine';
-import Filters from '../components/Filters';
-import '../style.css';
-
 import {
+  Box,
   Chip,
+  Container,
+  Grid,
+  Link,
   Paper,
   Table,
   TableBody,
@@ -21,6 +19,11 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import ChartLine from '../components/ChartLine';
+import Filters from '../components/Filters';
+import DataGate from '../data/DataGate';
+import { useDashboardData } from '../data/useDashboardData';
+import { filterData, pivotData } from '../utils/processData';
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_ROWS_PER_PAGE = 25;
@@ -34,85 +37,60 @@ const COLUMNS = [
   { key: 'detail',        label: 'Detail' },
 ];
 
-const Detail = () => {
-  const { metric_id } = useParams();
+const computeData = (summary, detail, metric_id, filters) => {
+  // Chart: aggregate summary rows for this metric by datestamp
+  const summaryRows = filterData(summary, { ...filters, metric_id });
 
-  const [rawData,          setRawData]          = useState(null);
-  const [detailData,       setDetailData]       = useState(null);
-  const [selected_filters, setSelected_filters] = useState({});
-  const [chartData,        setChartData]        = useState(null);
-  const [evidence,         setEvidence]         = useState([]);
-  const [metricInfo,       setMetricInfo]       = useState(null);
-  const [latestDate,       setLatestDate]       = useState(null);
+  const first = summaryRows[0];
+  const metricInfo = first ? {
+    title:    first.title,
+    category: first.category,
+    slo:      parseFloat(first.slo),
+    slo_min:  parseFloat(first.slo_min),
+  } : null;
 
+  const chartData = pivotData(summaryRows, ['datestamp'], {
+    sum_total:   ['sum', 'total'],
+    sum_totalok: ['sum', 'totalok'],
+    slo:         ['avg', 'slo'],
+    slo_min:     ['avg', 'slo_min'],
+  }).map(item => ({
+    datestamp: item.datestamp,
+    value:     item.sum_total ? item.sum_totalok / item.sum_total : 0,
+    slo:       item.slo,
+    slo_min:   item.slo_min,
+  }));
+
+  // Evidence: detail rows filtered to this metric + latest datestamp
+  const detailRows = filterData(detail, { ...filters, metric_id });
+  const latestDate = detailRows.reduce((max, r) => (r.datestamp > max ? r.datestamp : max), '');
+  const evidence = detailRows
+    .filter(r => r.datestamp === latestDate)
+    .map(r => ({ ...r, compliance: parseFloat(r.compliance) }));
+
+  return { metricInfo, chartData, latestDate, evidence };
+};
+
+const DetailContent = ({ summaryData, detailData, metric_id }) => {
+  const [filters,          setFilters]          = useState({});
   const [page,             setPage]             = useState(0);
   const [rowsPerPage,      setRowsPerPage]      = useState(DEFAULT_ROWS_PER_PAGE);
   const [sortCol,          setSortCol]          = useState('resource');
   const [sortDir,          setSortDir]          = useState('asc');
   const [complianceFilter, setComplianceFilter] = useState('all');
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { summaryData, detailData: detail } = await loadData();
-        setRawData(summaryData);
-        setDetailData(detail);
-        computeData(summaryData, detail, {});
-      } catch (err) {
-        console.error('Error loading data:', err);
-      }
-    };
-    init();
-  }, [metric_id]);
-
-  const computeData = (summary, detail, filters) => {
-    // Chart: aggregate summary rows for this metric by datestamp
-    const summaryRows = filterData(summary, { ...filters, metric_id });
-
-    if (summaryRows.length > 0) {
-      const first = summaryRows[0];
-      setMetricInfo({
-        title:    first.title,
-        category: first.category,
-        slo:      parseFloat(first.slo),
-        slo_min:  parseFloat(first.slo_min),
-      });
-    }
-
-    const pivoted = pivotData(summaryRows, ['datestamp'], {
-      sum_total:   ['sum', 'total'],
-      sum_totalok: ['sum', 'totalok'],
-      slo:         ['avg', 'slo'],
-      slo_min:     ['avg', 'slo_min'],
-    }).map(item => ({
-      datestamp: item.datestamp,
-      value:     item.sum_total ? item.sum_totalok / item.sum_total : 0,
-      slo:       item.slo,
-      slo_min:   item.slo_min,
-    }));
-    setChartData(pivoted);
-
-    // Evidence: detail rows filtered to this metric + latest datestamp
-    const detailRows = filterData(detail, { ...filters, metric_id });
-    const latest = detailRows.reduce((max, r) => (r.datestamp > max ? r.datestamp : max), '');
-    setLatestDate(latest);
-    setEvidence(
-      detailRows
-        .filter(r => r.datestamp === latest)
-        .map(r => ({ ...r, compliance: parseFloat(r.compliance) }))
-    );
-    setPage(0);
-  };
+  const { metricInfo, chartData, latestDate, evidence } = useMemo(
+    () => computeData(summaryData, detailData, metric_id, filters),
+    [summaryData, detailData, metric_id, filters]
+  );
 
   const handleDropdownChange = (event) => {
     const { name, value } = event.target;
-    const updated = { ...selected_filters, [name]: value };
-    setSelected_filters(updated);
-    if (rawData && detailData) computeData(rawData, detailData, updated);
+    setFilters(prev => ({ ...prev, [name]: value }));
+    setPage(0);
   };
 
   const handleSort = (col) => {
-    if (col === 'status') return; // status is derived — sort by compliant instead
     setSortDir(prev => (sortCol === col && prev === 'asc' ? 'desc' : 'asc'));
     setSortCol(col);
   };
@@ -133,45 +111,27 @@ const Detail = () => {
 
   const paginated = sorted.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
 
-  if (!chartData || !rawData) {
-    return (
-      <div className="spinner-container">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <h3 className="mt-3 text-dark">Please wait while the data is loading...</h3>
-          <p className="text-muted">This may take a moment depending on the size of your data.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container">
-      <p className="mt-3">
-        <RouterLink to="/metrics">&larr; Back to Metrics</RouterLink>
-      </p>
+    <Container>
+      <Typography sx={{ mt: 2 }}>
+        <Link component={RouterLink} to="/metrics">&larr; Back to Metrics</Link>
+      </Typography>
 
-      <h1 className="my-4">{metricInfo?.title ?? metric_id}</h1>
+      <Typography variant="h3" component="h1" sx={{ my: 3 }}>{metricInfo?.title ?? metric_id}</Typography>
       {metricInfo && (
-        <p className="text-muted">
+        <Typography color="text.secondary" sx={{ mb: 2 }}>
           Category: <strong>{metricInfo.category}</strong>
           &ensp;&mdash;&ensp;Target: <strong>{Math.round(metricInfo.slo * 100)}%</strong>
           &ensp;&mdash;&ensp;Min: <strong>{Math.round(metricInfo.slo_min * 100)}%</strong>
-        </p>
+        </Typography>
       )}
 
-      <div className="row">
-        <div className="col-md-3">
-          <Filters
-            data={rawData}
-            onChange={handleDropdownChange}
-            filters={selected_filters}
-          />
-        </div>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Filters data={summaryData} onChange={handleDropdownChange} filters={filters} />
+        </Grid>
 
-        <div className="col-md-9">
+        <Grid size={{ xs: 12, md: 9 }}>
           {chartData.length > 0 ? (
             <ChartLine
               id="metricDetail"
@@ -186,13 +146,13 @@ const Detail = () => {
               }}
             />
           ) : (
-            <p className="text-muted">No chart data for the selected filters.</p>
+            <Typography color="text.secondary">No chart data for the selected filters.</Typography>
           )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1em', marginTop: '2rem', marginBottom: '1rem' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mt: 4, mb: 2 }}>
             <Typography variant="h5">
               Evidence{latestDate && (
-                <span style={{ fontWeight: 400, fontSize: '0.8em' }}> ({latestDate})</span>
+                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8em' }}> ({latestDate})</Box>
               )}
             </Typography>
             <ToggleButtonGroup
@@ -205,10 +165,10 @@ const Detail = () => {
               <ToggleButton value="compliant">Compliant</ToggleButton>
               <ToggleButton value="non-compliant">Non-Compliant</ToggleButton>
             </ToggleButtonGroup>
-          </div>
+          </Box>
 
           {filteredEvidence.length === 0 ? (
-            <p className="text-muted">No evidence for the selected filters.</p>
+            <Typography color="text.secondary">No evidence for the selected filters.</Typography>
           ) : (
             <Paper variant="outlined">
               <TableContainer>
@@ -221,25 +181,23 @@ const Detail = () => {
                           align={col.key === 'compliance' ? 'right' : 'left'}
                           sortDirection={sortCol === col.key ? sortDir : false}
                         >
-                          {col.key === 'status' ? col.label : (
-                            <TableSortLabel
-                              active={sortCol === col.key}
-                              direction={sortCol === col.key ? sortDir : 'asc'}
-                              onClick={() => handleSort(col.key)}
-                            >
-                              {col.label}
-                            </TableSortLabel>
-                          )}
+                          <TableSortLabel
+                            active={sortCol === col.key}
+                            direction={sortCol === col.key ? sortDir : 'asc'}
+                            onClick={() => handleSort(col.key)}
+                          >
+                            {col.label}
+                          </TableSortLabel>
                         </TableCell>
                       ))}
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {paginated.map((row, i) => {
+                    {paginated.map(row => {
                       const pct = row.compliance * 100;
                       const chipColor = pct >= 100 ? 'success' : pct <= 0 ? 'error' : 'warning';
                       return (
-                        <TableRow key={i} hover>
+                        <TableRow key={`${row.business_unit}|${row.team}|${row.location}|${row.resource}`} hover>
                           <TableCell>{row.resource}</TableCell>
                           <TableCell>{row.business_unit}</TableCell>
                           <TableCell>{row.team}</TableCell>
@@ -265,9 +223,22 @@ const Detail = () => {
               />
             </Paper>
           )}
-        </div>
-      </div>
-    </div>
+        </Grid>
+      </Grid>
+    </Container>
+  );
+};
+
+const Detail = () => {
+  const { metric_id } = useParams();
+  const { data, error } = useDashboardData();
+  return (
+    <DataGate data={data} error={error}>
+      {({ summaryData, detailData }) => (
+        // key resets filters, sorting and paging when moving to another metric
+        <DetailContent key={metric_id} summaryData={summaryData} detailData={detailData} metric_id={metric_id} />
+      )}
+    </DataGate>
   );
 };
 

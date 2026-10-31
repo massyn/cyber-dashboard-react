@@ -1,28 +1,48 @@
-import React from "react";
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
+import { AppBar, Box, Button, Container, Toolbar, Typography } from "@mui/material";
+import { NavLink, Link as RouterLink } from "react-router-dom";
 
 const NAVBAR_BG = "#0d2137";
 
-const Menu = () => {
-    return (
-        <Navbar data-bs-theme="dark" sticky="top" style={{ backgroundColor: NAVBAR_BG }}>
-            <Container>
-                <Navbar.Brand href="/">Cyber Metrics</Navbar.Brand>
-                <Navbar.Toggle aria-controls="main-nav" />
-                <Navbar.Collapse id="main-nav">
-                    <Nav className="me-auto">
-                        <Nav.Link href="/">Overview</Nav.Link>
-                        <Nav.Link href="/metrics">Metrics</Nav.Link>
-                    </Nav>
-                    <Nav className="ms-auto">
-                        <Nav.Link href="https://github.com/massyn/cyber-dashboard-react" target="_blank" rel="noopener noreferrer">Github</Nav.Link>
-                    </Nav>
-                </Navbar.Collapse>
-            </Container>
-        </Navbar>
-    );
+const NAV_ITEMS = [
+    { to: "/",        label: "Overview" },
+    { to: "/metrics", label: "Metrics" },
+];
+
+const navButtonSx = {
+    color: "rgba(255, 255, 255, 0.7)",
+    textTransform: "none",
+    "&.active, &:hover": { color: "#fff" },
 };
+
+const Menu = () => (
+    <AppBar position="sticky" elevation={0} sx={{ backgroundColor: NAVBAR_BG }}>
+        <Container>
+            <Toolbar disableGutters variant="dense" sx={{ gap: 1, flexWrap: "wrap" }}>
+                <Typography
+                    variant="h6"
+                    component={RouterLink}
+                    to="/"
+                    sx={{ color: "inherit", textDecoration: "none", mr: 2 }}
+                >
+                    Cyber Metrics
+                </Typography>
+                {NAV_ITEMS.map(({ to, label }) => (
+                    <Button key={to} component={NavLink} to={to} end sx={navButtonSx}>
+                        {label}
+                    </Button>
+                ))}
+                <Box sx={{ flexGrow: 1 }} />
+                <Button
+                    href="https://github.com/massyn/cyber-dashboard-react"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={navButtonSx}
+                >
+                    Github
+                </Button>
+            </Toolbar>
+        </Container>
+    </AppBar>
+);
 
 export default Menu;

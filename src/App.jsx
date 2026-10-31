@@ -1,11 +1,12 @@
-import React from "react";
+import { lazy, Suspense } from "react";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import Menu from "./components/Menu";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Overview from "./pages/overview";
-import Metrics from "./pages/metrics";
-import Detail from "./pages/detail";
+import Menu from "./components/Menu";
+
+const Overview = lazy(() => import("./pages/overview"));
+const Metrics = lazy(() => import("./pages/metrics"));
+const Detail = lazy(() => import("./pages/detail"));
 
 const theme = createTheme({
     palette: {
@@ -17,6 +18,9 @@ const theme = createTheme({
         secondary: {
             main: "#42a5f5",
         },
+        background: {
+            default: "#f0f4f8",
+        },
     },
 });
 
@@ -26,11 +30,13 @@ function App() {
             <CssBaseline />
             <Router>
                 <Menu />
-                <Routes>
-                    <Route path="/"                   element={<Overview />} />
-                    <Route path="/metrics"            element={<Metrics />} />
-                    <Route path="/metric/:metric_id"  element={<Detail />} />
-                </Routes>
+                <Suspense fallback={null}>
+                    <Routes>
+                        <Route path="/"                   element={<Overview />} />
+                        <Route path="/metrics"            element={<Metrics />} />
+                        <Route path="/metric/:metric_id"  element={<Detail />} />
+                    </Routes>
+                </Suspense>
             </Router>
         </ThemeProvider>
     );

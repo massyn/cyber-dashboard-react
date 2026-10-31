@@ -37,7 +37,7 @@ const MetricComponent = ({ metric }) => {
                 <Link
                   href={metric.url}
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <HelpOutlineIcon

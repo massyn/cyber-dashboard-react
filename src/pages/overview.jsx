@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Box, Container, Grid, Typography } from '@mui/material';
 import ChartLine from '../components/ChartLine';
 import Filters from '../components/Filters';
 import GraphContainer from '../components/GraphContainer';
-import { loadData } from '../utils/fetchData';
+import DataGate from '../data/DataGate';
+import { useDashboardData } from '../data/useDashboardData';
 import { weightedCalculation } from '../utils/weightedCalculations';
-import '../style.css';
 
 const extractLatest = (data, dimensionKey) => {
   if (!data || data.length === 0) return { labels: [], values: [] };
@@ -22,128 +23,96 @@ const HorizontalBar = ({ title, labels, values }) => {
   if (labels.length === 0) return null;
   return (
     <GraphContainer title={title}>
-      <div style={{ padding: '8px 0' }}>
+      <Box sx={{ py: 1 }}>
         {labels.map((label, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ width: '130px', textAlign: 'right', paddingRight: '10px', fontSize: '13px', flexShrink: 0, color: '#333' }}>
+          <Box key={label} sx={{ display: 'flex', alignItems: 'center', mb: 1.25 }}>
+            <Box sx={{ width: 130, textAlign: 'right', pr: 1.25, fontSize: 13, flexShrink: 0, color: '#333' }}>
               {label}
-            </div>
-            <div style={{ flex: 1, backgroundColor: '#e0e8f0', borderRadius: '4px', height: '28px', position: 'relative' }}>
-              <div style={{
+            </Box>
+            <Box sx={{ flex: 1, backgroundColor: '#e0e8f0', borderRadius: 1, height: 28 }}>
+              <Box sx={{
                 width: `${values[i]}%`,
-                backgroundColor: '#1565c0',
+                backgroundColor: 'primary.main',
                 height: '100%',
-                borderRadius: '4px',
+                borderRadius: 1,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'flex-end',
-                paddingRight: '8px',
-                minWidth: '44px',
+                pr: 1,
+                minWidth: 44,
               }}>
-                <span style={{ color: 'white', fontSize: '11px', fontWeight: 600 }}>
+                <Box component="span" sx={{ color: 'white', fontSize: 11, fontWeight: 600 }}>
                   {values[i]?.toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          </div>
+                </Box>
+              </Box>
+            </Box>
+          </Box>
         ))}
-      </div>
+      </Box>
     </GraphContainer>
   );
 };
 
-const Overview = () => {
-  const [rawData,          setRawData]          = useState(null);
-  const [selected_filters, setSelected_filters] = useState('');
-  const [orgTrend,         setOrgTrend]         = useState(null);
-  const [buLatest,         setBuLatest]         = useState({ labels: [], values: [] });
-  const [catLatest,        setCatLatest]        = useState({ labels: [], values: [] });
+const OverviewContent = ({ summaryData }) => {
+  const [filters, setFilters] = useState({});
 
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const { summaryData } = await loadData();
-        setRawData(summaryData);
-        compute(summaryData, {});
-      } catch (error) {
-        console.error('Error initialising data:', error);
-      }
-    };
-    init();
-  }, []);
-
-  const compute = (data, filters) => {
-    setOrgTrend(weightedCalculation(data, filters));
-    setBuLatest(extractLatest(weightedCalculation(data, filters, 'business_unit'), 'business_unit'));
-    setCatLatest(extractLatest(weightedCalculation(data, filters, 'category'), 'category'));
-  };
+  const { orgTrend, buLatest, catLatest } = useMemo(() => ({
+    orgTrend:  weightedCalculation(summaryData, filters),
+    buLatest:  extractLatest(weightedCalculation(summaryData, filters, 'business_unit'), 'business_unit'),
+    catLatest: extractLatest(weightedCalculation(summaryData, filters, 'category'), 'category'),
+  }), [summaryData, filters]);
 
   const handleDropdownChange = (event) => {
     const { name, value } = event.target;
-    const updated = { ...selected_filters, [name]: value };
-    setSelected_filters(updated);
-    if (rawData) compute(rawData, updated);
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  if (!orgTrend || !rawData) {
-    return (
-      <div className="spinner-container">
-        <div className="text-center">
-          <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <h3 className="mt-3 text-dark">Please wait while the data is loading...</h3>
-          <p className="text-muted">This may take a moment depending on the size of your data.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="container">
-      <h1 className="my-4">Overview</h1>
-      <div className="row">
-        <div className="col-md-3">
-          <Filters
-            data={rawData}
-            onChange={handleDropdownChange}
-            filters={selected_filters}
-          />
-        </div>
+    <Container>
+      <Typography variant="h3" component="h1" sx={{ my: 3 }}>Overview</Typography>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Filters data={summaryData} onChange={handleDropdownChange} filters={filters} />
+        </Grid>
 
-        <div className="col-md-9">
-          <ChartLine
-            id="orgScore"
-            title="Organisational score over time"
-            data={orgTrend}
-            x="datestamp"
-            y={['value', 'slo', 'slo_min']}
-            custom={{
-              value:   { label: 'Score', showMark: true },
-              slo:     { color: 'green',  label: 'Target'  },
-              slo_min: { color: 'yellow', label: 'SLO min' },
-            }}
-          />
+        <Grid size={{ xs: 12, md: 9 }}>
+          {orgTrend.length > 0 ? (
+            <ChartLine
+              id="orgScore"
+              title="Organisational score over time"
+              data={orgTrend}
+              x="datestamp"
+              y={['value', 'slo', 'slo_min']}
+              custom={{
+                value:   { label: 'Score', showMark: true },
+                slo:     { color: 'green',  label: 'Target'  },
+                slo_min: { color: 'orange', label: 'SLO min' },
+              }}
+            />
+          ) : (
+            <Typography color="text.secondary">No data for the selected filters.</Typography>
+          )}
 
-          <div className="row">
-            <div className="col-md-6">
-              <HorizontalBar
-                title="Business Units"
-                labels={buLatest.labels}
-                values={buLatest.values}
-              />
-            </div>
-            <div className="col-md-6">
-              <HorizontalBar
-                title="Categories"
-                labels={catLatest.labels}
-                values={catLatest.values}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <HorizontalBar title="Business Units" labels={buLatest.labels} values={buLatest.values} />
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <HorizontalBar title="Categories" labels={catLatest.labels} values={catLatest.values} />
+            </Grid>
+          </Grid>
+        </Grid>
+      </Grid>
+    </Container>
+  );
+};
+
+const Overview = () => {
+  const { data, error } = useDashboardData();
+  return (
+    <DataGate data={data} error={error}>
+      {({ summaryData }) => <OverviewContent summaryData={summaryData} />}
+    </DataGate>
   );
 };
 

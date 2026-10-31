@@ -1,7 +1,6 @@
-import React from 'react';
 import { LinearProgress, Typography } from "@mui/material";
 
-export const determineComplianceColor = ( currentPercentage,slo,sloMin) => {
+const determineComplianceColor = ( currentPercentage,slo,sloMin) => {
     if (currentPercentage >= slo) {
       return "success";
     } else if (currentPercentage >= sloMin) {

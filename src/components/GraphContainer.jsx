@@ -1,15 +1,11 @@
-// GraphContainer.js
+import { Paper, Typography } from '@mui/material';
 
-import React from 'react';
-
-const GraphContainer = ({ title, description, children }) => {
-    return (
-        <div className="card card-chart">
-            <h5 className="card-title">{title}</h5>
-            <p>{description}</p>
-            {children}
-        </div>
-    );
-};
+const GraphContainer = ({ title, description, children }) => (
+    <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2, borderColor: '#b3c8e0' }}>
+        <Typography variant="h6" component="h5" sx={{ mb: 1, color: '#0d2137' }}>{title}</Typography>
+        {description && <Typography sx={{ mb: 1 }}>{description}</Typography>}
+        {children}
+    </Paper>
+);
 
 export default GraphContainer;
