@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import theme from '../theme';
 import Overview from './overview';
 
 const FILES = {
@@ -23,14 +25,14 @@ const chooseBusinessUnit = async (user, name) => {
 
 test('selecting a business unit and then "All" keeps the overview rendered', async () => {
   const user = userEvent.setup();
-  render(<MemoryRouter><Overview /></MemoryRouter>);
+  render(<ThemeProvider theme={theme}><MemoryRouter><Overview /></MemoryRouter></ThemeProvider>);
 
-  expect(await screen.findByText('Organisational score over time')).toBeInTheDocument();
+  expect(await screen.findByText('Score over time')).toBeInTheDocument();
 
   await chooseBusinessUnit(user, 'Sales');
-  expect(screen.getByText('Organisational score over time')).toBeInTheDocument();
+  expect(screen.getByText('Score over time')).toBeInTheDocument();
 
   await chooseBusinessUnit(user, 'All');
-  expect(screen.getByText('Organisational score over time')).toBeInTheDocument();
-  expect(screen.getByText('Business Units')).toBeInTheDocument();
+  expect(screen.getByText('Score over time')).toBeInTheDocument();
+  expect(screen.getByText('Business units')).toBeInTheDocument();
 });

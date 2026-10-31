@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
+  Button,
   Chip,
   Container,
   Grid,
-  Link,
   Paper,
   Table,
   TableBody,
@@ -19,11 +19,16 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
-import ChartLine from '../components/ChartLine';
+import { ArrowBackRounded as BackIcon } from '@mui/icons-material';
 import Filters from '../components/Filters';
+import PageHeader from '../components/PageHeader';
+import ScoreTrendChart from '../components/ScoreTrendChart';
+import StatTile from '../components/StatTile';
+import StatusChip from '../components/StatusChip';
 import DataGate from '../data/DataGate';
 import { useDashboardData } from '../data/useDashboardData';
 import { filterData, pivotData } from '../utils/processData';
+import { complianceStatus, formatPercent, formatPeriod } from '../utils/status';
 
 const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_ROWS_PER_PAGE = 25;
@@ -37,17 +42,19 @@ const COLUMNS = [
   { key: 'detail',        label: 'Detail' },
 ];
 
+// Per-resource result: fully compliant, partly compliant or not compliant.
+const resourceStatus = (compliance) => {
+  if (compliance >= 1) return { status: 'good', label: 'Compliant' };
+  if (compliance > 0) return { status: 'warning', label: `Partial ${formatPercent(compliance, 0)}` };
+  return { status: 'critical', label: 'Non-compliant' };
+};
+
 const computeData = (summary, detail, metric_id, filters) => {
   // Chart: aggregate summary rows for this metric by datestamp
   const summaryRows = filterData(summary, { ...filters, metric_id });
 
   const first = summaryRows[0];
-  const metricInfo = first ? {
-    title:    first.title,
-    category: first.category,
-    slo:      parseFloat(first.slo),
-    slo_min:  parseFloat(first.slo_min),
-  } : null;
+  const metricInfo = first ? { title: first.title, category: first.category } : null;
 
   const chartData = pivotData(summaryRows, ['datestamp'], {
     sum_total:   ['sum', 'total'],
@@ -59,7 +66,7 @@ const computeData = (summary, detail, metric_id, filters) => {
     value:     item.sum_total ? item.sum_totalok / item.sum_total : 0,
     slo:       item.slo,
     slo_min:   item.slo_min,
-  }));
+  })).sort((a, b) => (a.datestamp > b.datestamp ? 1 : -1));
 
   // Evidence: detail rows filtered to this metric + latest datestamp
   const detailRows = filterData(detail, { ...filters, metric_id });
@@ -84,16 +91,22 @@ const DetailContent = ({ summaryData, detailData, metric_id }) => {
     [summaryData, detailData, metric_id, filters]
   );
 
+  const updateFilters = (next) => {
+    setFilters(next);
+    setPage(0);
+  };
+
   const handleDropdownChange = (event) => {
     const { name, value } = event.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-    setPage(0);
+    updateFilters({ ...filters, [name]: value });
   };
 
   const handleSort = (col) => {
     setSortDir(prev => (sortCol === col && prev === 'asc' ? 'desc' : 'asc'));
     setSortCol(col);
   };
+
+  const compliantCount = evidence.filter(r => r.compliance >= 1).length;
 
   const filteredEvidence = evidence.filter(r => {
     if (complianceFilter === 'compliant')     return r.compliance >= 1;
@@ -110,119 +123,136 @@ const DetailContent = ({ summaryData, detailData, metric_id }) => {
   });
 
   const paginated = sorted.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
+  const latest = chartData.at(-1);
+  const previous = chartData.at(-2);
 
   return (
-    <Container>
-      <Typography sx={{ mt: 2 }}>
-        <Link component={RouterLink} to="/metrics">&larr; Back to Metrics</Link>
-      </Typography>
-
-      <Typography variant="h3" component="h1" sx={{ my: 3 }}>{metricInfo?.title ?? metric_id}</Typography>
-      {metricInfo && (
-        <Typography color="text.secondary" sx={{ mb: 2 }}>
-          Category: <strong>{metricInfo.category}</strong>
-          &ensp;&mdash;&ensp;Target: <strong>{Math.round(metricInfo.slo * 100)}%</strong>
-          &ensp;&mdash;&ensp;Min: <strong>{Math.round(metricInfo.slo_min * 100)}%</strong>
-        </Typography>
-      )}
+    <Container sx={{ pb: 6 }}>
+      <PageHeader
+        eyebrow={
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Button component={RouterLink} to="/metrics" size="small" startIcon={<BackIcon />} sx={{ ml: -1 }}>
+              Metrics
+            </Button>
+            {metricInfo && <Chip label={metricInfo.category} size="small" variant="outlined" />}
+            <Chip label={metric_id} size="small" variant="outlined" />
+          </Box>
+        }
+        title={metricInfo?.title ?? metric_id}
+        subtitle={latest ? `Latest period ${formatPeriod(latest.datestamp)}` : null}
+      />
 
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 3 }}>
-          <Filters data={summaryData} onChange={handleDropdownChange} filters={filters} />
+          <Filters data={summaryData} onChange={handleDropdownChange} filters={filters} onClear={() => updateFilters({})} />
         </Grid>
 
         <Grid size={{ xs: 12, md: 9 }}>
-          {chartData.length > 0 ? (
-            <ChartLine
-              id="metricDetail"
-              title="Score over time"
-              data={chartData}
-              x="datestamp"
-              y={['value', 'slo', 'slo_min']}
-              custom={{
-                value:   { label: 'Score', showMark: true },
-                slo:     { color: 'green', label: 'Target' },
-                slo_min: { color: 'orange', label: 'SLO min' },
-              }}
-            />
+          {latest ? (
+            <>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid size={{ xs: 12, sm: 6, lg: 5 }}>
+                  <StatTile
+                    hero
+                    label="Current score"
+                    value={formatPercent(latest.value)}
+                    delta={previous ? latest.value - previous.value : null}
+                    deltaPeriod={previous ? formatPeriod(previous.datestamp) : null}
+                    footer={<StatusChip status={complianceStatus(latest.value, latest.slo, latest.slo_min)} />}
+                  />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3, lg: 'grow' }}>
+                  <StatTile label="Target" value={formatPercent(latest.slo, 0)} footer={
+                    <Typography variant="body2" color="text.secondary">Minimum {formatPercent(latest.slo_min, 0)}</Typography>
+                  } />
+                </Grid>
+                <Grid size={{ xs: 6, sm: 3, lg: 'grow' }}>
+                  <StatTile label="Compliant resources" value={`${compliantCount} / ${evidence.length}`} footer={
+                    <Typography variant="body2" color="text.secondary">
+                      {evidence.length - compliantCount} need attention
+                    </Typography>
+                  } />
+                </Grid>
+              </Grid>
+
+              <ScoreTrendChart title="Score over time" subtitle="Against target and minimum" data={chartData} />
+            </>
           ) : (
-            <Typography color="text.secondary">No chart data for the selected filters.</Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>No chart data for the selected filters.</Typography>
           )}
 
-          <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, mt: 4, mb: 2 }}>
-            <Typography variant="h5">
-              Evidence{latestDate && (
-                <Box component="span" sx={{ fontWeight: 400, fontSize: '0.8em' }}> ({latestDate})</Box>
-              )}
-            </Typography>
-            <ToggleButtonGroup
-              value={complianceFilter}
-              exclusive
-              size="small"
-              onChange={(_, val) => { if (val !== null) { setComplianceFilter(val); setPage(0); } }}
-            >
-              <ToggleButton value="all">All</ToggleButton>
-              <ToggleButton value="compliant">Compliant</ToggleButton>
-              <ToggleButton value="non-compliant">Non-Compliant</ToggleButton>
-            </ToggleButtonGroup>
-          </Box>
+          <Paper sx={{ overflow: 'hidden' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, p: { xs: 2, sm: 3 }, pb: 2 }}>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="h2">Evidence</Typography>
+                {latestDate && (
+                  <Typography variant="body2" color="text.secondary">Resources assessed in {formatPeriod(latestDate)}</Typography>
+                )}
+              </Box>
+              <ToggleButtonGroup
+                value={complianceFilter}
+                exclusive
+                size="small"
+                onChange={(_, val) => { if (val !== null) { setComplianceFilter(val); setPage(0); } }}
+              >
+                <ToggleButton value="all">All</ToggleButton>
+                <ToggleButton value="compliant">Compliant</ToggleButton>
+                <ToggleButton value="non-compliant">Non-compliant</ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
 
-          {filteredEvidence.length === 0 ? (
-            <Typography color="text.secondary">No evidence for the selected filters.</Typography>
-          ) : (
-            <Paper variant="outlined">
-              <TableContainer>
-                <Table size="small" stickyHeader>
-                  <TableHead>
-                    <TableRow>
-                      {COLUMNS.map(col => (
-                        <TableCell
-                          key={col.key}
-                          align={col.key === 'compliance' ? 'right' : 'left'}
-                          sortDirection={sortCol === col.key ? sortDir : false}
-                        >
-                          <TableSortLabel
-                            active={sortCol === col.key}
-                            direction={sortCol === col.key ? sortDir : 'asc'}
-                            onClick={() => handleSort(col.key)}
-                          >
-                            {col.label}
-                          </TableSortLabel>
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {paginated.map(row => {
-                      const pct = row.compliance * 100;
-                      const chipColor = pct >= 100 ? 'success' : pct <= 0 ? 'error' : 'warning';
-                      return (
-                        <TableRow key={`${row.business_unit}|${row.team}|${row.location}|${row.resource}`} hover>
-                          <TableCell>{row.resource}</TableCell>
-                          <TableCell>{row.business_unit}</TableCell>
-                          <TableCell>{row.team}</TableCell>
-                          <TableCell>{row.location}</TableCell>
-                          <TableCell align="right">
-                            <Chip label={`${pct.toFixed(0)}%`} color={chipColor} size="small" />
+            {filteredEvidence.length === 0 ? (
+              <Typography color="text.secondary" sx={{ px: 3, pb: 3 }}>No evidence for the selected filters.</Typography>
+            ) : (
+              <>
+                <TableContainer sx={{ maxHeight: 640 }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        {COLUMNS.map(col => (
+                          <TableCell key={col.key} sortDirection={sortCol === col.key ? sortDir : false} sx={{ whiteSpace: 'nowrap' }}>
+                            <TableSortLabel
+                              active={sortCol === col.key}
+                              direction={sortCol === col.key ? sortDir : 'asc'}
+                              onClick={() => handleSort(col.key)}
+                            >
+                              {col.label}
+                            </TableSortLabel>
                           </TableCell>
-                          <TableCell>{row.detail}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              <TablePagination
-                component="div"
-                count={filteredEvidence.length}
-                page={page}
-                rowsPerPage={rowsPerPage}
-                rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
-                onPageChange={(_, newPage) => setPage(newPage)}
-                onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
-              />
-            </Paper>
-          )}
+                        ))}
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {paginated.map(row => {
+                        const { status, label } = resourceStatus(row.compliance);
+                        return (
+                          <TableRow key={`${row.business_unit}|${row.team}|${row.location}|${row.resource}`} hover>
+                            <TableCell sx={{ fontWeight: 500, whiteSpace: 'nowrap', fontFamily: 'ui-monospace, SFMono-Regular, Consolas, monospace' }}>
+                              {row.resource}
+                            </TableCell>
+                            <TableCell>{row.business_unit}</TableCell>
+                            <TableCell>{row.team}</TableCell>
+                            <TableCell>{row.location}</TableCell>
+                            <TableCell sx={{ whiteSpace: 'nowrap' }}><StatusChip status={status} label={label} /></TableCell>
+                            <TableCell sx={{ color: 'text.secondary' }}>{row.detail}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <TablePagination
+                  component="div"
+                  count={filteredEvidence.length}
+                  page={page}
+                  rowsPerPage={rowsPerPage}
+                  rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
+                  onPageChange={(_, newPage) => setPage(newPage)}
+                  onRowsPerPageChange={e => { setRowsPerPage(parseInt(e.target.value, 10)); setPage(0); }}
+                />
+              </>
+            )}
+          </Paper>
         </Grid>
       </Grid>
     </Container>
